@@ -1,11 +1,18 @@
-// Initialize the map
+// Global variables
 let map;
-let layerControl;
 let allLayers = {};
+let basemapLayers = {};
+let activeBasemap = 'OpenStreetMap';
+let analysisData = {
+    totalArea: 0,
+    corridorLength: 0,
+    chiefsCount: 0
+};
 
 // Initialize map when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
     initializeMap();
+    initializeControls();
 });
 
 function initializeMap() {
@@ -15,33 +22,44 @@ function initializeMap() {
         zoom: CONFIG.initialZoom,
         minZoom: CONFIG.minZoom,
         maxZoom: CONFIG.maxZoom,
-        fullscreenControl: true
+        fullscreenControl: true,
+        attributionControl: false // We'll add attribution in the footer
     });
 
-    // Add basemap layers
-    const baseMaps = CONFIG.basemaps;
-    baseMaps.OpenStreetMap.addTo(map);
+    // Add attribution to footer
+    const attributionText = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | IFAW 2025';
+    document.getElementById('footer').innerHTML = `<p>${attributionText}</p>`;
 
-    // Create overlay groups for organization
-    const landTypeOverlays = {};
-    const featureOverlays = {};
+    // Setup basemap layers
+    basemapLayers = CONFIG.basemaps;
+    basemapLayers.OpenStreetMap.addTo(map);
 
-    // Initialize layer control
-    layerControl = L.control.layers(baseMaps, null, {
-        collapsed: false,
-        position: 'topleft'
-    });
+    // Add zoom control to top-right
+    L.control.zoom({
+        position: 'topright'
+    }).addTo(map);
 
-    // Load all geojson data
+    // Add fullscreen control
+    L.control.fullscreen({
+        position: 'topright',
+        title: 'View Fullscreen',
+        titleCancel: 'Exit Fullscreen',
+        forceSeparateButton: true
+    }).addTo(map);
+
+    // Add scale control
+    L.control.scale({
+        imperial: false,
+        position: 'bottomright'
+    }).addTo(map);
+
+    // Load all GeoJSON data
     loadAllLayers().then(() => {
-        // Add layer control to map
-        layerControl.addTo(map);
-        
-        // Initialize UI controls
-        initializeCustomControls();
-        
         // Create and add the legend
         createLegend();
+        
+        // Update analysis data
+        updateAnalysisData();
     });
 }
 
@@ -214,6 +232,33 @@ async function loadLanduseLayers() {
                     color: '#666',
                     fillOpacity: 0.7
                 };
+            },
+            onEachFeature: function(feature, layer) {
+                // Custom popup content for land use
+                let popupContent = '<div class="custom-popup">';
+                popupContent += `<h3>${feature.properties.LANDTYPE || 'Land Use'}</h3>`;
+                
+                for (const property in feature.properties) {
+                    if (feature.properties[property]) {
+                        popupContent += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
+                    }
+                }
+                
+                // Add area calculation
+                try {
+                    const area = calculateArea(feature);
+                    popupContent += `<p><strong>Estimated Area:</strong> ${area.toFixed(2)} km²</p>`;
+                } catch (error) {
+                    console.error('Error calculating area:', error);
+                }
+                
+                popupContent += '</div>';
+                layer.bindPopup(popupContent);
+                
+                // Add click event to show info in sidebar
+                layer.on('click', function(e) {
+                    showFeatureInfo(feature, 'landuse2');
+                });
             }
         });
         
@@ -224,6 +269,305 @@ async function loadLanduseLayers() {
                 
                 // Set color based on land type property
                 if (feature.properties.LANDTYPE === 'Communal Land') {
+                    fillColor = CONFIG.colors.communalLand;
+                } else if (feature.properties.LANDTYPE === 'Target Forest Land') {
+                    fillColor = CONFIG.colors.targetForestLand;
+                } else if (feature.properties.LANDTYPE === 'Large Scale Farming') {
+                    fillColor = CONFIG.colors.largeScaleFarming;
+                } else if (feature.properties.LANDTYPE === 'National Park') {
+                    fillColor = CONFIG.colors.nationalPark;
+                } else if (feature.properties.LANDTYPE === 'Safari Area') {
+                    fillColor = CONFIG.colors.safariArea;
+                } else if (feature.properties.LANDTYPE === 'Small Scale Farming') {
+                    fillColor = CONFIG.colors.smallScaleFarming;
+                } else if (feature.properties.LANDTYPE === 'Community CA') {
+                    fillColor = CONFIG.colors.communityCa;
+                }
+                
+                return {
+                    fillColor: fillColor,
+                    weight: 1,
+                    opacity: 1,
+                    color: '#666',
+                    fillOpacity: 0.7
+                };
+            },
+            onEachFeature: function(feature, layer) {
+                // Custom popup content for land use
+                let popupContent = '<div class="custom-popup">';
+                popupContent += `<h3>${feature.properties.LANDTYPE || 'Land Use'}</h3>`;
+                
+                for (const property in feature.properties) {
+                    if (feature.properties[property]) {
+                        popupContent += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
+                    }
+                }
+                
+                // Add area calculation
+                try {
+                    const area = calculateArea(feature);
+                    popupContent += `<p><strong>Estimated Area:</strong> ${area.toFixed(2)} km²</p>`;
+                } catch (error) {
+                    console.error('Error calculating area:', error);
+                }
+                
+                popupContent += '</div>';
+                layer.bindPopup(popupContent);
+                
+                // Add click event to show info in sidebar
+                layer.on('click', function(e) {
+                    showFeatureInfo(feature, 'landuse');
+                });
+            }
+        });
+        
+        // Make sure landuse is always on top
+        if (landuse && landuse2) {
+            landuse.bringToFront();
+        }
+        
+    } catch (error) {
+        console.error('Error loading landuse layers:', error);
+        showErrorNotification('Error loading land use layers');
+    }
+}
+
+// Load chiefs with 15km buffer
+async function loadChiefsWithBuffer() {
+    try {
+        const response = await fetch(CONFIG.geojsonPaths.chiefs);
+        if (!response.ok) {
+            throw new Error(`Failed to load chiefs (${response.status})`);
+        }
+        
+        const data = await response.json();
+        
+        // Create a group for both chiefs and their buffers
+        const chiefsGroup = L.layerGroup();
+        
+        // Process each chief point
+        data.features.forEach(feature => {
+            // Create the chief marker
+            const chiefMarker = L.circleMarker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
+                radius: 8,
+                fillColor: '#FF0000',
+                color: '#000',
+                weight: 1,
+                opacity: 1,
+                fillOpacity: 0.9
+            });
+            
+            // Add popup
+            let popupContent = '<div class="custom-popup">';
+            popupContent += `<h3>Chief</h3>`;
+            for (const property in feature.properties) {
+                if (feature.properties[property]) {
+                    popupContent += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
+                }
+            }
+            popupContent += '</div>';
+            chiefMarker.bindPopup(popupContent);
+            
+            // Add click event to show info in sidebar
+            chiefMarker.on('click', function(e) {
+                showFeatureInfo(feature, 'chiefs');
+            });
+            
+            // Add chief marker to the group
+            chiefsGroup.addLayer(chiefMarker);
+            
+            // Create a 15km buffer around the chief
+            // Convert 15km to degrees (approximate conversion, varies by latitude)
+            // At the equator, 1 degree is approximately 111 km
+            const bufferRadius = CONFIG.chiefBufferRadius / 111;
+            
+            const bufferCircle = L.circle([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
+                radius: bufferRadius * 111000, // Convert back to meters for Leaflet
+                color: CONFIG.colors.chiefBuffers,
+                fillColor: CONFIG.colors.chiefBuffers,
+                weight: 2,
+                opacity: 0.6,
+                fillOpacity: 0.1,
+                className: 'chief-buffer'
+            });
+            
+            // Add buffer to the group
+            chiefsGroup.addLayer(bufferCircle);
+        });
+        
+        // Add the chiefs group to allLayers
+        allLayers['chiefs'] = chiefsGroup;
+        
+        // Add to map if checkbox is checked
+        const checkbox = document.querySelector('.layer-control[data-layer="chiefs"]');
+        if (checkbox && checkbox.checked) {
+            chiefsGroup.addTo(map);
+        }
+        
+    } catch (error) {
+        console.error('Error loading chiefs with buffers:', error);
+        showErrorNotification('Error loading chiefs layer');
+    }
+}
+
+// Load wildlife corridors with animated arrows
+async function loadCorridorsWithArrows() {
+    try {
+        const response = await fetch(CONFIG.geojsonPaths.corridors);
+        if (!response.ok) {
+            throw new Error(`Failed to load corridors (${response.status})`);
+        }
+        
+        const data = await response.json();
+        
+        // Create a group for corridors and arrows
+        const corridorsGroup = L.layerGroup();
+        
+        // Process each corridor line
+        data.features.forEach(feature => {
+            // Create the corridor line
+            const corridorLine = L.geoJSON(feature, {
+                style: {
+                    color: CONFIG.colors.wildlifeCorridors,
+                    weight: 3,
+                    opacity: 1
+                }
+            });
+            
+            // Add popup
+            let popupContent = '<div class="custom-popup">';
+            popupContent += `<h3>Wildlife Corridor</h3>`;
+            for (const property in feature.properties) {
+                if (feature.properties[property]) {
+                    popupContent += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
+                }
+            }
+            
+            // Add corridor length
+            try {
+                const length = calculateLength(feature);
+                popupContent += `<p><strong>Estimated Length:</strong> ${length.toFixed(2)} km</p>`;
+            } catch (error) {
+                console.error('Error calculating length:', error);
+            }
+            
+            popupContent += '</div>';
+            corridorLine.bindPopup(popupContent);
+            
+            // Add click event to show info in sidebar
+            corridorLine.on('click', function(e) {
+                showFeatureInfo(feature, 'corridors');
+            });
+            
+            // Add corridor to the group
+            corridorsGroup.addLayer(corridorLine);
+            
+            // Extract coordinates for arrow decorations
+            const coordinates = feature.geometry.coordinates;
+            
+            // Skip if not a LineString or has fewer than 2 points
+            if (feature.geometry.type !== 'LineString' || coordinates.length < 2) {
+                return;
+            }
+            
+            // Create polyline for the decorator
+            const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
+            const polyline = L.polyline(latLngs, {
+                color: 'transparent',
+                weight: 1
+            });
+            
+            // Add arrow decorations
+            const arrowDecorator = L.polylineDecorator(polyline, {
+                patterns: [
+                    {
+                        offset: '5%',
+                        repeat: '15%',
+                        symbol: L.Symbol.arrowHead({
+                            pixelSize: 15,
+                            pathOptions: {
+                                color: CONFIG.colors.wildlifeCorridors,
+                                fillOpacity: 1,
+                                weight: 0
+                            }
+                        })
+                    }
+                ]
+            });
+            
+            // Add arrow decorator to the group
+            corridorsGroup.addLayer(arrowDecorator);
+        });
+        
+        // Add the corridors group to allLayers
+        allLayers['corridors'] = corridorsGroup;
+        
+        // Add to map if checkbox is checked
+        const checkbox = document.querySelector('.layer-control[data-layer="corridors"]');
+        if (checkbox && checkbox.checked) {
+            corridorsGroup.addTo(map);
+        }
+        
+    } catch (error) {
+        console.error('Error loading corridors with arrows:', error);
+        showErrorNotification('Error loading wildlife corridors');
+    }
+}
+
+// Load roads by category
+async function loadRoadsByCategory() {
+    try {
+        // Load category 1 roads
+        const category1Roads = await loadLayer('category1Road', CONFIG.geojsonPaths.category1Road, {
+            style: {
+                color: CONFIG.colors.roads.category1,
+                weight: 3,
+                opacity: 1
+            }
+        });
+        
+        // Load category 2 roads
+        const category2Roads = await loadLayer('category2Road', CONFIG.geojsonPaths.category2Road, {
+            style: {
+                color: CONFIG.colors.roads.category2,
+                weight: 2,
+                opacity: 1
+            }
+        });
+        
+        // Load category 3 roads
+        const category3Roads = await loadLayer('category3Road', CONFIG.geojsonPaths.category3Road, {
+            style: {
+                color: CONFIG.colors.roads.category3,
+                weight: 1.5,
+                opacity: 1
+            }
+        });
+        
+        // Create a group for all roads
+        const roadsGroup = L.layerGroup([category1Roads, category2Roads, category3Roads]);
+        
+        // Add the roads group to allLayers
+        allLayers['roads'] = roadsGroup;
+        
+        // Add to map if checkbox is checked
+        const checkbox = document.querySelector('.layer-control[data-layer="roads"]');
+        if (checkbox && checkbox.checked) {
+            roadsGroup.addTo(map);
+            
+            // Disable individual road category checkboxes
+            const roadCheckboxes = document.querySelectorAll('.layer-control[data-layer^="category"]');
+            roadCheckboxes.forEach(cb => {
+                cb.disabled = true;
+                cb.checked = false;
+            });
+        }
+        
+    } catch (error) {
+        console.error('Error loading roads by category:', error);
+        showErrorNotification('Error loading road layers');
+    }
+} === 'Communal Land') {
                     fillColor = CONFIG.colors.communalLand;
                 } else if (feature.properties.LANDTYPE === 'Target Forest Land') {
                     fillColor = CONFIG.colors.targetForestLand;
@@ -575,33 +919,7 @@ function createLegend() {
     legendDiv.appendChild(featuresLegend);
 }
 
-// Add event listeners
-function addEventListeners() {
-    // Add any additional event listeners here
-}
-
-// Scale factor for arrow animation speed based on zoom level
-function getScaleFactor() {
-    const zoom = map.getZoom();
-    return 1 + (CONFIG.initialZoom - zoom) * 0.2;
-}
-
-// Utility function to handle errors when loading GeoJSON
-function handleGeoJsonError(error, layerName) {
-    console.error(`Error loading ${layerName}:`, error);
-    // You could add a notification to the UI here
-}
-
-// Update chief buffers when the map is zoomed
-function updateChiefBuffers() {
-    if (allLayers['chiefs']) {
-        // This would need to iterate through all buffer layers and update them
-        // based on the current zoom level if needed
-    }
-}
-
-// Utility function to convert kilometers to degrees at a given latitude
-function kmToDegrees(km, latitude) {
+) {
     // Earth's radius in km
     const earthRadius = 6371;
     

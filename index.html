@@ -15,45 +15,106 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
     
+    <!-- Leaflet Sidebar CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet-sidebar/0.2.0/L.Control.Sidebar.css" />
+    
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="header">
-        <div class="logo">
-            <img src="images/ifaw-logo.png" alt="IFAW Logo">
-        </div>
-        <h1>ELEPHANT CORRIDORS IN THE GREATER HWANGE LANDSCAPE</h1>
-        <div class="north-arrow">
-            <img src="images/north-arrow.png" alt="North Arrow">
+    <div id="header">
+        <div class="title-container">
+            <img src="images/ifaw-logo.png" alt="IFAW Logo" class="logo">
+            <h1>ELEPHANT CORRIDORS IN THE GREATER HWANGE LANDSCAPE</h1>
+            <div class="north-arrow-container">
+                <img src="images/north-arrow.svg" alt="North Arrow" class="north-arrow">
+            </div>
         </div>
     </div>
     
-    <div class="container">
-        <div class="sidebar">
-            <h2>Layers</h2>
-            <div class="layer-control">
-                <h3>Base Map</h3>
-                <div id="basemap-control"></div>
-                
-                <h3>Land Type</h3>
-                <div id="landtype-control"></div>
-                
-                <h3>Features</h3>
-                <div id="features-control"></div>
+    <div id="map-container">
+        <div id="map"></div>
+        
+        <div id="sidebar">
+            <div class="sidebar-header">
+                <h2>Map Controls</h2>
             </div>
             
-            <div class="legend">
-                <h3>Legend</h3>
-                <div id="legend-content"></div>
+            <div class="sidebar-content">
+                <div class="control-section">
+                    <h3>Basemaps</h3>
+                    <div class="basemap-controls">
+                        <label><input type="radio" name="basemap" value="OpenStreetMap" checked> OpenStreetMap</label>
+                        <label><input type="radio" name="basemap" value="Satellite"> Satellite</label>
+                        <label><input type="radio" name="basemap" value="Topographic"> Topographic</label>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Land Types</h3>
+                    <div class="land-type-controls">
+                        <label><input type="checkbox" class="layer-control" data-layer="landuse" checked> Land Use (Priority)</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="landuse2" checked> Land Use (Base)</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="communityCa" checked> Community Conservation Areas</label>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Administrative</h3>
+                    <div class="admin-controls">
+                        <label><input type="checkbox" class="layer-control" data-layer="hmzBoundary" checked> HMZ Boundary</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="landscapeBoundary" checked> Landscape Boundary</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="wards" checked> Wards</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="bufferwards" checked> IFAW Operating Wards</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="chiefs" checked> Chiefs with 15km Buffers</label>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Features</h3>
+                    <div class="feature-controls">
+                        <label><input type="checkbox" class="layer-control" data-layer="corridors" checked> Wildlife Corridors</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="rivers" checked> Rivers</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="waterSources" checked> Water Sources</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="roads" checked> All Roads</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="category1Road"> Category 1 Roads</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="category2Road"> Category 2 Roads</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="category3Road"> Category 3 Roads</label>
+                        <label><input type="checkbox" class="layer-control" data-layer="pointsOfInterest" checked> Points of Interest</label>
+                    </div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Legend</h3>
+                    <div id="legend-content"></div>
+                </div>
+                
+                <div class="control-section">
+                    <h3>Analysis</h3>
+                    <div id="analysis-content">
+                        <p><strong>Total Area:</strong> <span id="total-area">Loading...</span></p>
+                        <p><strong>Corridor Length:</strong> <span id="corridor-length">Loading...</span></p>
+                        <p><strong>Chiefs Count:</strong> <span id="chiefs-count">Loading...</span></p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar-footer">
+                <p>Created by IFAW &copy; 2025</p>
             </div>
         </div>
         
-        <div id="map"></div>
+        <div id="info-panel" class="hidden">
+            <div class="info-header">
+                <h3>Feature Information</h3>
+                <button class="close-btn">&times;</button>
+            </div>
+            <div id="info-content"></div>
+        </div>
     </div>
     
-    <div class="footer">
-        <p>&copy; IFAW 2025 | Map Data: OpenStreetMap and contributors, CC-BY-SA</p>
+    <div id="footer">
+        <p>Map Data: OpenStreetMap and contributors, CC-BY-SA | IFAW &copy; 2025</p>
     </div>
     
     <!-- Leaflet JS -->
@@ -65,11 +126,14 @@
     <!-- Leaflet MarkerCluster JS -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
     
-    <!-- Leaflet.heat for heatmap if needed -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+    <!-- Leaflet Sidebar JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-sidebar/0.2.0/L.Control.Sidebar.min.js"></script>
     
     <!-- Leaflet-Polyline-Decorator for animated arrows -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.min.js"></script>
+    
+    <!-- Turf.js for spatial analysis -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     
     <!-- Custom JS -->
     <script src="js/config.js"></script>

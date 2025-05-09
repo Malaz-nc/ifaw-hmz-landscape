@@ -50,6 +50,23 @@
             max-width: 80%;
             text-align: center;
         }
+        
+        /* Feature labels */
+        .chiefs-label div, 
+        .pointsOfInterest-label div,
+        .chizariraNationalPark-label div,
+        .chirisaSafari-label div,
+        .cheteSafariArea-label div,
+        .forestArea-label div {
+            background: rgba(255, 255, 255, 0.8) !important;
+            padding: 3px 6px !important;
+            border-radius: 3px !important;
+            font-weight: bold !important;
+            font-size: 12px !important;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2) !important;
+            border: 1px solid rgba(0, 0, 0, 0.2) !important;
+            pointer-events: none !important;
+        }
     </style>
 </head>
 <body>
@@ -81,8 +98,7 @@
             <div class="control-section">
                 <h3>Land Types</h3>
                 <div class="control-items">
-                    <label><input type="checkbox" class="layer-control" data-layer="landuse" checked> Land Use (Priority)</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="landuse2" checked> Land Use (Base)</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="landuse" checked> Land Use</label>
                     <label><input type="checkbox" class="layer-control" data-layer="communityCa" checked> Community Conservation Areas</label>
                     <label><input type="checkbox" class="layer-control" data-layer="forestArea" checked> Forest Areas</label>
                     <label><input type="checkbox" class="layer-control" data-layer="chizariraNationalPark" checked> Chizarira National Park</label>
@@ -94,9 +110,9 @@
             <div class="control-section">
                 <h3>Administrative</h3>
                 <div class="control-items">
-                    <label><input type="checkbox" class="layer-control" data-layer="hmzBoundary" checked> HMZ Boundary</label>
                     <label><input type="checkbox" class="layer-control" data-layer="landscapeBoundary" checked> Landscape Boundary</label>
                     <label><input type="checkbox" class="layer-control" data-layer="wards" checked> Wards</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="zimwards" checked> Zimbabwe Wards</label>
                     <label><input type="checkbox" class="layer-control" data-layer="bufferwards" checked> IFAW Operating Wards</label>
                     <label><input type="checkbox" class="layer-control" data-layer="chiefs" checked> Chiefs with 15km Buffers</label>
                 </div>
@@ -113,7 +129,7 @@
             <div class="control-section">
                 <h3>Features</h3>
                 <div class="control-items">
-                    <label><input type="checkbox" class="layer-control" data-layer="corridors" checked> Wildlife Corridors</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="wildlifeCorridors" checked> Wildlife Corridors</label>
                     <label><input type="checkbox" class="layer-control" data-layer="rivers" checked> Rivers</label>
                     <label><input type="checkbox" class="layer-control" data-layer="waterSources" checked> Water Sources</label>
                     <label><input type="checkbox" class="layer-control" data-layer="roads" checked> All Roads</label>
@@ -188,7 +204,7 @@
                 } else {
                     console.error("fixMapIssues function not found!");
                 }
-            }, 5000); // Wait 5 seconds to ensure map is fully loaded
+            }, 7000); // Wait 7 seconds to ensure map is fully loaded
         });
     </script>
 </body>

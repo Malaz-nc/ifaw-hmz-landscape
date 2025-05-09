@@ -1,4 +1,4 @@
-// Map fixes to address all the issues
+// Map fixes to address all the issues - final version with corrected file names
 
 // 1. Update CONFIG colors and add new layers
 CONFIG.colors = {
@@ -26,7 +26,7 @@ CONFIG.colors = {
     }
 };
 
-// 2. Update geojsonPaths to match your actual file names
+// 2. Updated geojsonPaths to match your actual file names
 CONFIG.geojsonPaths = {
     bufferwards: 'data/bufferwards.geojson',
     category1Road: 'data/category1_road.geojson',
@@ -37,18 +37,19 @@ CONFIG.geojsonPaths = {
     chirisaSafari: 'data/chirisa_safari.geojson',
     chizariraNationalPark: 'data/chizarira_nationalpark.geojson',
     communityCa: 'data/Community_CA.geojson',
-    corridors: 'data/corridors.geojson',
+    wildlifeCorridors: 'data/wildlife_corridors.geojson', // Updated to the correct file
     forestArea: 'data/forest_area.geojson',
-    hmzBoundary: 'data/HMZ_Boundary.geojson',
+    // hmzBoundary removed as file doesn't exist
     ifawProjectSites: 'data/ifaw_project_sites.geojson',
     ifawProposedSites: 'data/ifaw_proposed_sites.geojson',
     landscapeBoundary: 'data/Landscape_boundary.geojson',
     landuse: 'data/Landuse.geojson',
-    landuse2: 'data/Landuse2.geojson',
-    pointsOfInterest: 'data/Places_of_interest.geojson',
+    // landuse2 removed as requested
+    pointsOfInterest: 'data/places.geojson', // Updated to the correct file
     rivers: 'data/rivers.geojson',
     wards: 'data/wards.geojson',
-    waterSources: 'data/water_sources.geojson'
+    waterSources: 'data/water_sources.geojson',
+    zimwards: 'data/zimwards.geojson'
 };
 
 // Fix layer styles and order
@@ -62,18 +63,24 @@ function fixMapIssues() {
     console.log("Applying map fixes...");
     
     try {
-        // 1. Update style for existing layers
+        // 1. Remove landuse2 if it exists
+        if (allLayers['landuse2'] && map.hasLayer(allLayers['landuse2'])) {
+            map.removeLayer(allLayers['landuse2']);
+            console.log("Removed landuse2 as requested");
+        }
+        
+        // 2. Update style for existing layers
         updateExistingLayerStyles();
         
-        // 2. Load additional layers that are specific to this implementation
+        // 3. Load additional layers that are specific to this implementation
         loadAdditionalLayers().then(() => {
-            // 3. Set correct layer order after all layers are loaded
+            // 4. Set correct layer order after all layers are loaded
             setCorrectLayerOrder();
             
-            // 4. Add labels to chiefs and points of interest
-            addLabelsToFeatures();
+            // 5. Add labels to all important features
+            addLabelsToAllFeatures();
             
-            // 5. Update the legend
+            // 6. Update the legend
             createUpdatedLegend();
             
             console.log("Map fixed successfully!");
@@ -91,10 +98,10 @@ function fixMapIssues() {
     }
 }
 
-// Update styles of existing layers
+// Update styles of existing layers with careful error checking
 function updateExistingLayerStyles() {
     // 1. Update style for bufferwards to be blue
-    if (allLayers['bufferwards']) {
+    if (allLayers['bufferwards'] && typeof allLayers['bufferwards'].setStyle === 'function') {
         allLayers['bufferwards'].setStyle({
             color: CONFIG.colors.ifawOperatingWards,
             weight: 2,
@@ -105,7 +112,7 @@ function updateExistingLayerStyles() {
     }
     
     // 2. Update style for wards to be outlined only
-    if (allLayers['wards']) {
+    if (allLayers['wards'] && typeof allLayers['wards'].setStyle === 'function') {
         allLayers['wards'].setStyle({
             color: CONFIG.colors.wards,
             weight: 1.5,
@@ -116,7 +123,7 @@ function updateExistingLayerStyles() {
     }
     
     // 3. Update river styling
-    if (allLayers['rivers']) {
+    if (allLayers['rivers'] && typeof allLayers['rivers'].setStyle === 'function') {
         allLayers['rivers'].setStyle({
             color: CONFIG.colors.rivers,
             weight: 2
@@ -124,78 +131,68 @@ function updateExistingLayerStyles() {
         console.log("Updated rivers style");
     }
     
-    // 4. Update wildlife corridors to be red and thicker
-    if (allLayers['corridors']) {
-        allLayers['corridors'].setStyle({
-            color: CONFIG.colors.wildlifeCorridors,
-            weight: 4
-        });
-        console.log("Updated corridors style");
+    // 4. Update wildlife corridors to be red and thicker - with careful error checking
+    // Note: We're now using wildlifeCorridors as the key
+    if (allLayers['wildlifeCorridors']) {
+        try {
+            if (typeof allLayers['wildlifeCorridors'].setStyle === 'function') {
+                allLayers['wildlifeCorridors'].setStyle({
+                    color: CONFIG.colors.wildlifeCorridors,
+                    weight: 4
+                });
+                console.log("Updated wildlife corridors style");
+            } else if (typeof allLayers['wildlifeCorridors'].eachLayer === 'function') {
+                // Try a different approach for layer groups
+                allLayers['wildlifeCorridors'].eachLayer(function(layer) {
+                    if (typeof layer.setStyle === 'function') {
+                        layer.setStyle({
+                            color: CONFIG.colors.wildlifeCorridors,
+                            weight: 4
+                        });
+                    }
+                });
+                console.log("Updated wildlife corridors style through eachLayer");
+            }
+        } catch (error) {
+            console.error("Error updating wildlife corridors style:", error);
+        }
     }
     
-    // 5. Make sure landuse layers have correct colors
-    if (allLayers['landuse']) {
-        allLayers['landuse'].setStyle(function(feature) {
-            let fillColor = CONFIG.colors.communalLand; // Default
-            
-            if (feature.properties && feature.properties.LANDTYPE) {
-                const landType = feature.properties.LANDTYPE.toLowerCase();
+    // 5. Make sure landuse has correct colors
+    if (allLayers['landuse'] && typeof allLayers['landuse'].setStyle === 'function') {
+        try {
+            allLayers['landuse'].setStyle(function(feature) {
+                let fillColor = CONFIG.colors.communalLand; // Default
                 
-                if (landType.includes('communal')) {
-                    fillColor = CONFIG.colors.communalLand;
-                } else if (landType.includes('forest') || landType.includes('reserve')) {
-                    fillColor = CONFIG.colors.forestArea;
-                } else if (landType.includes('farming') && landType.includes('large')) {
-                    fillColor = CONFIG.colors.largeScaleFarming;
-                } else if (landType.includes('national') || landType.includes('park') || landType.includes('chirisa')) {
-                    fillColor = CONFIG.colors.nationalPark;
-                } else if (landType.includes('safari') || landType.includes('chete')) {
-                    fillColor = CONFIG.colors.safariArea;
-                } else if (landType.includes('farming') && landType.includes('small')) {
-                    fillColor = CONFIG.colors.smallScaleFarming;
-                } else if (landType.includes('community') || landType.includes('ca')) {
-                    fillColor = CONFIG.colors.communityCa;
+                if (feature.properties && feature.properties.LANDTYPE) {
+                    const landType = feature.properties.LANDTYPE.toLowerCase();
+                    
+                    if (landType.includes('communal')) {
+                        fillColor = CONFIG.colors.communalLand;
+                    } else if (landType.includes('forest') || landType.includes('reserve')) {
+                        fillColor = CONFIG.colors.forestArea;
+                    } else if (landType.includes('farming') && landType.includes('large')) {
+                        fillColor = CONFIG.colors.largeScaleFarming;
+                    } else if (landType.includes('national') || landType.includes('park') || landType.includes('chirisa')) {
+                        fillColor = CONFIG.colors.nationalPark;
+                    } else if (landType.includes('safari') || landType.includes('chete')) {
+                        fillColor = CONFIG.colors.safariArea;
+                    } else if (landType.includes('farming') && landType.includes('small')) {
+                        fillColor = CONFIG.colors.smallScaleFarming;
+                    } else if (landType.includes('community') || landType.includes('ca')) {
+                        fillColor = CONFIG.colors.communityCa;
+                    }
                 }
-            }
-            
-            return {
-                fillColor: fillColor,
-                fillOpacity: 0.7
-            };
-        });
-        console.log("Updated landuse style");
-    }
-    
-    if (allLayers['landuse2']) {
-        allLayers['landuse2'].setStyle(function(feature) {
-            let fillColor = CONFIG.colors.communalLand; // Default
-            
-            if (feature.properties && feature.properties.LANDTYPE) {
-                const landType = feature.properties.LANDTYPE.toLowerCase();
                 
-                if (landType.includes('communal')) {
-                    fillColor = CONFIG.colors.communalLand;
-                } else if (landType.includes('forest') || landType.includes('reserve')) {
-                    fillColor = CONFIG.colors.forestArea;
-                } else if (landType.includes('farming') && landType.includes('large')) {
-                    fillColor = CONFIG.colors.largeScaleFarming;
-                } else if (landType.includes('national') || landType.includes('park') || landType.includes('chirisa')) {
-                    fillColor = CONFIG.colors.nationalPark;
-                } else if (landType.includes('safari') || landType.includes('chete')) {
-                    fillColor = CONFIG.colors.safariArea;
-                } else if (landType.includes('farming') && landType.includes('small')) {
-                    fillColor = CONFIG.colors.smallScaleFarming;
-                } else if (landType.includes('community') || landType.includes('ca')) {
-                    fillColor = CONFIG.colors.communityCa;
-                }
-            }
-            
-            return {
-                fillColor: fillColor,
-                fillOpacity: 0.7
-            };
-        });
-        console.log("Updated landuse2 style");
+                return {
+                    fillColor: fillColor,
+                    fillOpacity: 0.7
+                };
+            });
+            console.log("Updated landuse style");
+        } catch (error) {
+            console.error("Error updating landuse style:", error);
+        }
     }
 }
 
@@ -203,231 +200,139 @@ function updateExistingLayerStyles() {
 async function loadAdditionalLayers() {
     const newLayers = [];
     
-    // 1. Load forest areas
-    if (!allLayers['forestArea'] && CONFIG.geojsonPaths.forestArea) {
-        try {
-            const response = await fetch(CONFIG.geojsonPaths.forestArea);
-            if (response.ok) {
-                const data = await response.json();
-                const forestLayer = L.geoJSON(data, {
-                    style: {
-                        fillColor: CONFIG.colors.forestArea,
-                        color: '#333',
-                        weight: 1,
-                        fillOpacity: 0.7
-                    },
-                    onEachFeature: function(feature, layer) {
-                        let popupContent = '<div class="custom-popup">';
-                        popupContent += '<h3>Forest Area</h3>';
-                        if (feature.properties) {
-                            for (const prop in feature.properties) {
-                                if (feature.properties[prop]) {
-                                    popupContent += `<p><strong>${prop}:</strong> ${feature.properties[prop]}</p>`;
+    // Function to safely load a layer with error handling
+    async function safelyLoadLayer(layerName, urlPath, styleOptions, popupTitle) {
+        if (!allLayers[layerName] && urlPath) {
+            try {
+                console.log(`Loading ${layerName} from ${urlPath}...`);
+                const response = await fetch(urlPath);
+                if (response.ok) {
+                    const data = await response.json();
+                    const layer = L.geoJSON(data, {
+                        style: styleOptions,
+                        onEachFeature: function(feature, layer) {
+                            let popupContent = '<div class="custom-popup">';
+                            popupContent += `<h3>${popupTitle || layerName}</h3>`;
+                            if (feature.properties) {
+                                for (const prop in feature.properties) {
+                                    if (feature.properties[prop]) {
+                                        popupContent += `<p><strong>${prop}:</strong> ${feature.properties[prop]}</p>`;
+                                    }
                                 }
                             }
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
                         }
-                        popupContent += '</div>';
-                        layer.bindPopup(popupContent);
-                    }
-                });
-                allLayers['forestArea'] = forestLayer;
-                newLayers.push('forestArea');
-                console.log("Added forest area layer");
+                    });
+                    allLayers[layerName] = layer;
+                    newLayers.push(layerName);
+                    console.log(`Added ${layerName} layer`);
+                    return true;
+                } else {
+                    console.error(`Failed to load ${layerName}: ${response.status} ${response.statusText}`);
+                    return false;
+                }
+            } catch (error) {
+                console.error(`Error loading ${layerName}:`, error);
+                return false;
             }
-        } catch (error) {
-            console.error("Error loading forest area:", error);
         }
+        return false;
     }
+    
+    // Try to load wildlife_corridors if original corridors didn't load
+    if (!allLayers['corridors'] && !allLayers['wildlifeCorridors']) {
+        await safelyLoadLayer('wildlifeCorridors', CONFIG.geojsonPaths.wildlifeCorridors, {
+            color: CONFIG.colors.wildlifeCorridors,
+            weight: 4,
+            opacity: 1
+        }, 'Wildlife Corridors');
+    }
+    
+    // 1. Load forest areas
+    await safelyLoadLayer('forestArea', CONFIG.geojsonPaths.forestArea, {
+        fillColor: CONFIG.colors.forestArea,
+        color: '#333',
+        weight: 1,
+        fillOpacity: 0.7
+    }, 'Forest Area');
     
     // 2. Load Chizarira National Park
-    if (!allLayers['chizariraNationalPark'] && CONFIG.geojsonPaths.chizariraNationalPark) {
-        try {
-            const response = await fetch(CONFIG.geojsonPaths.chizariraNationalPark);
-            if (response.ok) {
-                const data = await response.json();
-                const parkLayer = L.geoJSON(data, {
-                    style: {
-                        fillColor: CONFIG.colors.nationalPark,
-                        color: '#333',
-                        weight: 1,
-                        fillOpacity: 0.7
-                    },
-                    onEachFeature: function(feature, layer) {
-                        let popupContent = '<div class="custom-popup">';
-                        popupContent += '<h3>Chizarira National Park</h3>';
-                        if (feature.properties) {
-                            for (const prop in feature.properties) {
-                                if (feature.properties[prop]) {
-                                    popupContent += `<p><strong>${prop}:</strong> ${feature.properties[prop]}</p>`;
-                                }
-                            }
-                        }
-                        popupContent += '</div>';
-                        layer.bindPopup(popupContent);
-                    }
-                });
-                allLayers['chizariraNationalPark'] = parkLayer;
-                newLayers.push('chizariraNationalPark');
-                console.log("Added Chizarira National Park layer");
-            }
-        } catch (error) {
-            console.error("Error loading Chizarira National Park:", error);
-        }
-    }
+    await safelyLoadLayer('chizariraNationalPark', CONFIG.geojsonPaths.chizariraNationalPark, {
+        fillColor: CONFIG.colors.nationalPark,
+        color: '#333',
+        weight: 1,
+        fillOpacity: 0.7
+    }, 'Chizarira National Park');
     
-    // 3. Load Safari Areas
-    if (!allLayers['chirisaSafari'] && CONFIG.geojsonPaths.chirisaSafari) {
-        try {
-            const response = await fetch(CONFIG.geojsonPaths.chirisaSafari);
-            if (response.ok) {
-                const data = await response.json();
-                const safariLayer = L.geoJSON(data, {
-                    style: {
-                        fillColor: CONFIG.colors.safariArea,
-                        color: '#333',
-                        weight: 1,
-                        fillOpacity: 0.7
-                    },
-                    onEachFeature: function(feature, layer) {
-                        let popupContent = '<div class="custom-popup">';
-                        popupContent += '<h3>Chirisa Safari Area</h3>';
-                        if (feature.properties) {
-                            for (const prop in feature.properties) {
-                                if (feature.properties[prop]) {
-                                    popupContent += `<p><strong>${prop}:</strong> ${feature.properties[prop]}</p>`;
-                                }
-                            }
-                        }
-                        popupContent += '</div>';
-                        layer.bindPopup(popupContent);
-                    }
-                });
-                allLayers['chirisaSafari'] = safariLayer;
-                newLayers.push('chirisaSafari');
-                console.log("Added Chirisa Safari layer");
-            }
-        } catch (error) {
-            console.error("Error loading Chirisa Safari:", error);
-        }
-    }
+    // 3. Load Chirisa Safari
+    await safelyLoadLayer('chirisaSafari', CONFIG.geojsonPaths.chirisaSafari, {
+        fillColor: CONFIG.colors.safariArea,
+        color: '#333',
+        weight: 1,
+        fillOpacity: 0.7
+    }, 'Chirisa Safari Area');
     
     // 4. Load Chete Safari Area
-    if (!allLayers['cheteSafariArea'] && CONFIG.geojsonPaths.cheteSafariArea) {
-        try {
-            const response = await fetch(CONFIG.geojsonPaths.cheteSafariArea);
-            if (response.ok) {
-                const data = await response.json();
-                const safariLayer = L.geoJSON(data, {
-                    style: {
-                        fillColor: CONFIG.colors.safariArea,
-                        color: '#333',
-                        weight: 1,
-                        fillOpacity: 0.7
-                    },
-                    onEachFeature: function(feature, layer) {
-                        let popupContent = '<div class="custom-popup">';
-                        popupContent += '<h3>Chete Safari Area</h3>';
-                        if (feature.properties) {
-                            for (const prop in feature.properties) {
-                                if (feature.properties[prop]) {
-                                    popupContent += `<p><strong>${prop}:</strong> ${feature.properties[prop]}</p>`;
-                                }
-                            }
-                        }
-                        popupContent += '</div>';
-                        layer.bindPopup(popupContent);
-                    }
-                });
-                allLayers['cheteSafariArea'] = safariLayer;
-                newLayers.push('cheteSafariArea');
-                console.log("Added Chete Safari Area layer");
-            }
-        } catch (error) {
-            console.error("Error loading Chete Safari Area:", error);
-        }
-    }
+    await safelyLoadLayer('cheteSafariArea', CONFIG.geojsonPaths.cheteSafariArea, {
+        fillColor: CONFIG.colors.safariArea,
+        color: '#333',
+        weight: 1,
+        fillOpacity: 0.7
+    }, 'Chete Safari Area');
     
-    // 5. Load IFAW Project Sites with dashed lines
-    if (!allLayers['ifawProjectSites'] && CONFIG.geojsonPaths.ifawProjectSites) {
-        try {
-            const response = await fetch(CONFIG.geojsonPaths.ifawProjectSites);
-            if (response.ok) {
-                const data = await response.json();
-                const projectSitesLayer = L.geoJSON(data, {
-                    style: {
-                        color: CONFIG.colors.ifawProjectSites,
-                        weight: 3,
-                        dashArray: '5, 5',
-                        fillOpacity: 0.1
-                    },
-                    onEachFeature: function(feature, layer) {
-                        let popupContent = '<div class="custom-popup">';
-                        popupContent += '<h3>IFAW Project Site</h3>';
-                        if (feature.properties) {
-                            for (const prop in feature.properties) {
-                                if (feature.properties[prop]) {
-                                    popupContent += `<p><strong>${prop}:</strong> ${feature.properties[prop]}</p>`;
-                                }
-                            }
-                        }
-                        popupContent += '</div>';
-                        layer.bindPopup(popupContent);
-                    }
-                });
-                allLayers['ifawProjectSites'] = projectSitesLayer;
-                newLayers.push('ifawProjectSites');
-                console.log("Added IFAW Project Sites layer");
-            }
-        } catch (error) {
-            console.error("Error loading IFAW Project Sites:", error);
-        }
-    }
+    // 5. Load IFAW Project Sites
+    await safelyLoadLayer('ifawProjectSites', CONFIG.geojsonPaths.ifawProjectSites, {
+        color: CONFIG.colors.ifawProjectSites,
+        weight: 3,
+        dashArray: '5, 5',
+        fillOpacity: 0.1
+    }, 'IFAW Project Site');
     
-    // 6. Load IFAW Proposed Sites with different dashed lines
-    if (!allLayers['ifawProposedSites'] && CONFIG.geojsonPaths.ifawProposedSites) {
-        try {
-            const response = await fetch(CONFIG.geojsonPaths.ifawProposedSites);
-            if (response.ok) {
-                const data = await response.json();
-                const proposedSitesLayer = L.geoJSON(data, {
-                    style: {
-                        color: CONFIG.colors.ifawProposedSites,
-                        weight: 3,
-                        dashArray: '10, 5',
-                        fillOpacity: 0.1
-                    },
-                    onEachFeature: function(feature, layer) {
-                        let popupContent = '<div class="custom-popup">';
-                        popupContent += '<h3>IFAW Proposed Site</h3>';
-                        if (feature.properties) {
-                            for (const prop in feature.properties) {
-                                if (feature.properties[prop]) {
-                                    popupContent += `<p><strong>${prop}:</strong> ${feature.properties[prop]}</p>`;
-                                }
-                            }
-                        }
-                        popupContent += '</div>';
-                        layer.bindPopup(popupContent);
-                    }
+    // 6. Load IFAW Proposed Sites
+    await safelyLoadLayer('ifawProposedSites', CONFIG.geojsonPaths.ifawProposedSites, {
+        color: CONFIG.colors.ifawProposedSites,
+        weight: 3,
+        dashArray: '10, 5',
+        fillOpacity: 0.1
+    }, 'IFAW Proposed Site');
+    
+    // 7. Try to load points of interest if they didn't load earlier
+    if (!allLayers['pointsOfInterest']) {
+        await safelyLoadLayer('pointsOfInterest', CONFIG.geojsonPaths.pointsOfInterest, {
+            pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng, {
+                    radius: 5,
+                    fillColor: '#FF7F00',
+                    color: '#000',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
                 });
-                allLayers['ifawProposedSites'] = proposedSitesLayer;
-                newLayers.push('ifawProposedSites');
-                console.log("Added IFAW Proposed Sites layer");
             }
-        } catch (error) {
-            console.error("Error loading IFAW Proposed Sites:", error);
-        }
+        }, 'Points of Interest');
     }
     
     // Add new layers to map
     newLayers.forEach(layerName => {
-        allLayers[layerName].addTo(map);
+        // Check if the checkbox for this layer exists and is checked
+        const checkbox = document.querySelector(`.layer-control[data-layer="${layerName}"]`);
+        if (checkbox && checkbox.checked) {
+            allLayers[layerName].addTo(map);
+            console.log(`Added ${layerName} to map`);
+        } else if (!checkbox) {
+            // If no checkbox exists but it's a crucial layer, add it anyway
+            if (['forestArea', 'chizariraNationalPark', 'chirisaSafari', 'cheteSafariArea'].includes(layerName)) {
+                allLayers[layerName].addTo(map);
+                console.log(`Added ${layerName} to map (no checkbox found)`);
+            }
+        }
     });
     
     return newLayers;
 }
 
-// Function to set the correct layer order
+// Function to set the correct layer order with careful error checking
 function setCorrectLayerOrder() {
     console.log("Setting correct layer order...");
     
@@ -441,10 +346,8 @@ function setCorrectLayerOrder() {
     const layerOrder = [
         // Base layers
         'landscapeBoundary',
-        'hmzBoundary',
         
-        // Land use base layers
-        'landuse2',
+        // Land use base layer (only keeping landuse, not landuse2)
         'landuse',
         
         // Protected areas and specific land types
@@ -456,6 +359,7 @@ function setCorrectLayerOrder() {
         
         // Administrative boundaries
         'wards',
+        'zimwards',
         'bufferwards',
         
         // IFAW areas (on top of other polygons)
@@ -469,6 +373,7 @@ function setCorrectLayerOrder() {
         'category2Road',
         'category3Road',
         'corridors',
+        'wildlifeCorridors',
         
         // Points
         'waterSources',
@@ -476,16 +381,18 @@ function setCorrectLayerOrder() {
         'pointsOfInterest'
     ];
     
-    // First, remove all layers to reset order
+    // First remove all layers to reset order (but remember which ones were visible)
+    const visibleLayers = {};
     availableLayers.forEach(layerName => {
         if (map.hasLayer(allLayers[layerName])) {
+            visibleLayers[layerName] = true;
             map.removeLayer(allLayers[layerName]);
         }
     });
     
-    // Now add them back in correct order
+    // Now add them back in correct order (only the ones that were visible)
     layerOrder.forEach(layerName => {
-        if (availableLayers.includes(layerName)) {
+        if (availableLayers.includes(layerName) && visibleLayers[layerName]) {
             allLayers[layerName].addTo(map);
             console.log(`Added ${layerName} to map in correct order`);
         }
@@ -494,23 +401,48 @@ function setCorrectLayerOrder() {
     console.log("Layer order set successfully");
 }
 
-// Add labels to chiefs and points of interest
-function addLabelsToFeatures() {
-    // Add labels to chiefs
-    if (allLayers['chiefs']) {
-        addLabelsToLayer('chiefs');
-    }
-    
-    // Add labels to points of interest
-    if (allLayers['pointsOfInterest']) {
-        addLabelsToLayer('pointsOfInterest');
+// Add labels to all important features
+function addLabelsToAllFeatures() {
+    try {
+        // Add labels to chiefs if available
+        if (allLayers['chiefs']) {
+            addLabelsToLayer('chiefs');
+        }
+        
+        // Add labels to points of interest if available
+        if (allLayers['pointsOfInterest']) {
+            addLabelsToLayer('pointsOfInterest');
+        }
+        
+        // Add labels to parks and special areas
+        const areaLayers = [
+            'chizariraNationalPark', 
+            'chirisaSafari', 
+            'cheteSafariArea', 
+            'forestArea'
+        ];
+        
+        areaLayers.forEach(layerName => {
+            if (allLayers[layerName]) {
+                addLabelsToCenterOfPolygon(layerName);
+            }
+        });
+        
+    } catch (error) {
+        console.error("Error adding labels to features:", error);
     }
 }
 
-// Helper function to add labels to a layer
+// Helper function to add labels to a point layer
 function addLabelsToLayer(layerName) {
     try {
         if (!allLayers[layerName]) return;
+        
+        // Make sure the layer has the toGeoJSON method
+        if (typeof allLayers[layerName].toGeoJSON !== 'function') {
+            console.log(`${layerName} doesn't support toGeoJSON method, can't add labels`);
+            return;
+        }
         
         // Create a label group if it doesn't exist
         if (!allLayers[`${layerName}Labels`]) {
@@ -521,9 +453,13 @@ function addLabelsToLayer(layerName) {
         }
         
         // Get the features from the layer
-        const features = allLayers[layerName].toGeoJSON().features;
+        const geoJson = allLayers[layerName].toGeoJSON();
+        if (!geoJson || !geoJson.features || !Array.isArray(geoJson.features)) {
+            console.log(`${layerName} doesn't have valid features, can't add labels`);
+            return;
+        }
         
-        features.forEach(feature => {
+        geoJson.features.forEach(feature => {
             if (feature.geometry && feature.geometry.type === 'Point') {
                 const coords = [feature.geometry.coordinates[1], feature.geometry.coordinates[0]];
                 
@@ -531,7 +467,7 @@ function addLabelsToLayer(layerName) {
                 let name = layerName === 'chiefs' ? 'Chief' : 'POI';
                 
                 if (feature.properties) {
-                    const nameProps = ['name', 'NAME', 'Name', 'CHIEF', 'Chief', 'title', 'TITLE', 'Title'];
+                    const nameProps = ['name', 'NAME', 'Name', 'CHIEF', 'Chief', 'title', 'TITLE', 'Title', 'Place', 'PLACE'];
                     for (const prop of nameProps) {
                         if (feature.properties[prop]) {
                             name = feature.properties[prop];
@@ -550,6 +486,110 @@ function addLabelsToLayer(layerName) {
                 
                 // Add label to the layer group
                 L.marker(coords, { icon: labelIcon }).addTo(allLayers[`${layerName}Labels`]);
+            }
+        });
+        
+        // Add the label group to the map
+        allLayers[`${layerName}Labels`].addTo(map);
+        console.log(`Added labels to ${layerName}`);
+    } catch (error) {
+        console.error(`Error adding labels to ${layerName}:`, error);
+    }
+}
+
+// Helper function to add labels to the center of polygon areas
+function addLabelsToCenterOfPolygon(layerName) {
+    try {
+        if (!allLayers[layerName]) return;
+        
+        // Make sure the layer has the toGeoJSON method
+        if (typeof allLayers[layerName].toGeoJSON !== 'function') {
+            console.log(`${layerName} doesn't support toGeoJSON method, can't add labels`);
+            return;
+        }
+        
+        // Create a label group if it doesn't exist
+        if (!allLayers[`${layerName}Labels`]) {
+            allLayers[`${layerName}Labels`] = L.layerGroup();
+        } else {
+            // Clear existing labels
+            allLayers[`${layerName}Labels`].clearLayers();
+        }
+        
+        // Get the features from the layer
+        const geoJson = allLayers[layerName].toGeoJSON();
+        if (!geoJson || !geoJson.features || !Array.isArray(geoJson.features)) {
+            console.log(`${layerName} doesn't have valid features, can't add labels`);
+            return;
+        }
+        
+        geoJson.features.forEach(feature => {
+            // Only process polygons
+            if (feature.geometry && (feature.geometry.type === 'Polygon' || feature.geometry.type === 'MultiPolygon')) {
+                // Determine the center of the polygon
+                let center;
+                if (window.turf) {
+                    // Use turf.js if available to get the center
+                    const centroid = turf.centroid(feature);
+                    center = [centroid.geometry.coordinates[1], centroid.geometry.coordinates[0]];
+                } else {
+                    // Simple center calculation for polygon
+                    if (feature.geometry.type === 'Polygon') {
+                        // Get the first ring of the polygon (outer boundary)
+                        const coords = feature.geometry.coordinates[0];
+                        // Calculate the average of all points to get an approximate center
+                        let sumX = 0, sumY = 0;
+                        coords.forEach(coord => {
+                            sumX += coord[0];
+                            sumY += coord[1];
+                        });
+                        center = [sumY / coords.length, sumX / coords.length];
+                    } else {
+                        // For MultiPolygon, just use the center of the first polygon
+                        const coords = feature.geometry.coordinates[0][0];
+                        let sumX = 0, sumY = 0;
+                        coords.forEach(coord => {
+                            sumX += coord[0];
+                            sumY += coord[1];
+                        });
+                        center = [sumY / coords.length, sumX / coords.length];
+                    }
+                }
+                
+                // Get a name for the area
+                let name = layerName.replace(/([A-Z])/g, ' $1').trim();
+                
+                if (feature.properties) {
+                    const nameProps = ['name', 'NAME', 'Name', 'LANDTYPE', 'landtype', 'Landtype', 'Land_Type', 'type', 'TYPE', 'Type'];
+                    for (const prop of nameProps) {
+                        if (feature.properties[prop]) {
+                            name = feature.properties[prop];
+                            break;
+                        }
+                    }
+                }
+                
+                // Format the display name based on original layerName
+                if (layerName === 'chizariraNationalPark') {
+                    name = 'Chizarira National Park';
+                } else if (layerName === 'chirisaSafari') {
+                    name = 'Chirisa Safari Area';
+                } else if (layerName === 'cheteSafariArea') {
+                    name = 'Chete Safari Area';
+                } else if (layerName === 'forestArea') {
+                    name = 'Forest Area';
+                }
+                
+                // Create label with appropriate styling
+                const labelIcon = L.divIcon({
+                    className: `${layerName}-label`,
+                    html: `<div style="white-space: nowrap; background: rgba(255,255,255,0.7); padding: 2px 5px; border-radius: 3px; font-weight: bold; font-size: 14px;">${name}</div>`,
+                    iconSize: [150, 24],
+                    iconAnchor: [75, 12]
+                });
+                
+                // Add label to the layer group
+                L.marker(center, { icon: labelIcon }).addTo(allLayers[`${layerName}Labels`]);
             }
         });
         
@@ -654,94 +694,4 @@ function createUpdatedLegend() {
                 legendHTML += `
                     <div class="legend-item">
                         <div class="legend-point" style="${style}"></div>
-                        <div class="legend-label">${item.label}</div>
-                    </div>
-                `;
-            }
-        });
-        
-        legendHTML += '</div>';
-        
-        // Set the legend HTML
-        legendDiv.innerHTML = legendHTML;
-        console.log("Legend updated");
-    } catch (error) {
-        console.error('Error creating updated legend:', error);
-    }
-}
-
-// Success notification
-function showSuccessNotification(message) {
-    // Check if there's an existing notification
-    const existingNotification = document.querySelector('.success-notification');
-    if (existingNotification) {
-        document.body.removeChild(existingNotification);
-    }
-
-    const notification = document.createElement('div');
-    notification.className = 'success-notification';
-    notification.textContent = message;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.left = '50%';
-    notification.style.transform = 'translateX(-50%)';
-    notification.style.backgroundColor = '#4CAF50';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 15px';
-    notification.style.borderRadius = '4px';
-    notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
-    notification.style.zIndex = '10000';
-    notification.style.maxWidth = '80%';
-    notification.style.textAlign = 'center';
-    notification.style.fontSize = '14px';
-    notification.style.fontWeight = 'bold';
-    
-    // Add to body and auto-remove after 5 seconds
-    document.body.appendChild(notification);
-    setTimeout(() => {
-        if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-        }
-    }, 5000);
-}
-
-// Error notification
-function showErrorNotification(message) {
-    // Check if there's an existing notification
-    const existingNotification = document.querySelector('.error-notification');
-    if (existingNotification) {
-        document.body.removeChild(existingNotification);
-    }
-
-    const notification = document.createElement('div');
-    notification.className = 'error-notification';
-    notification.textContent = message;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.left = '50%';
-    notification.style.transform = 'translateX(-50%)';
-    notification.style.backgroundColor = '#ff5555';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 15px';
-    notification.style.borderRadius = '4px';
-    notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
-    notification.style.zIndex = '10000';
-    notification.style.maxWidth = '80%';
-    notification.style.textAlign = 'center';
-    notification.style.fontSize = '14px';
-    notification.style.fontWeight = 'bold';
-    
-    // Add to body and auto-remove after 10 seconds
-    document.body.appendChild(notification);
-    setTimeout(() => {
-        if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-        }
-    }, 10000);
-    
-    // Log to console as well
-    console.error(message);
-}
-
-// Add to window to allow calling from console
-window.fixMapIssues = fixMapIssues;
+                        <div class="legend-label

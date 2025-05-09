@@ -18,6 +18,7 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style-update.css">
     
     <style>
         /* Additional styles to match the reference map */
@@ -33,43 +34,13 @@
             color: #3373b4;
         }
         
-        /* Custom styling for labels */
-        .chief-label, .poi-label {
-            background: transparent;
-            border: none;
-            font-weight: bold;
-        }
-        
-        /* Updated legend styles */
-        .legend-item {
-            display: flex;
-            align-items: center;
-            margin: 4px 0;
-        }
-        
-        .legend-color {
-            width: 16px;
-            height: 16px;
-            margin-right: 8px;
-            border: 1px solid #888;
-        }
-        
-        .legend-line {
-            height: 0;
-            margin-right: 8px;
-        }
-        
-        .legend-point {
-            margin-right: 8px;
-        }
-        
-        /* Success notification */
-        .success-notification {
+        /* Error notification */
+        .error-notification {
             position: fixed;
             top: 20px;
             left: 50%;
             transform: translateX(-50%);
-            background-color: #4CAF50;
+            background-color: #ff5555;
             color: white;
             padding: 10px 15px;
             border-radius: 4px;
@@ -113,6 +84,10 @@
                     <label><input type="checkbox" class="layer-control" data-layer="landuse" checked> Land Use (Priority)</label>
                     <label><input type="checkbox" class="layer-control" data-layer="landuse2" checked> Land Use (Base)</label>
                     <label><input type="checkbox" class="layer-control" data-layer="communityCa" checked> Community Conservation Areas</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="forestArea" checked> Forest Areas</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="chizariraNationalPark" checked> Chizarira National Park</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="chirisaSafari" checked> Chirisa Safari Area</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="cheteSafariArea" checked> Chete Safari Area</label>
                 </div>
             </div>
             
@@ -124,6 +99,14 @@
                     <label><input type="checkbox" class="layer-control" data-layer="wards" checked> Wards</label>
                     <label><input type="checkbox" class="layer-control" data-layer="bufferwards" checked> IFAW Operating Wards</label>
                     <label><input type="checkbox" class="layer-control" data-layer="chiefs" checked> Chiefs with 15km Buffers</label>
+                </div>
+            </div>
+            
+            <div class="control-section">
+                <h3>IFAW Activity Areas</h3>
+                <div class="control-items">
+                    <label><input type="checkbox" class="layer-control" data-layer="ifawProjectSites" checked> Current Project Sites</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="ifawProposedSites" checked> Proposed Project Sites</label>
                 </div>
             </div>
             
@@ -205,7 +188,7 @@
                 } else {
                     console.error("fixMapIssues function not found!");
                 }
-            }, 3000);
+            }, 5000); // Wait 5 seconds to ensure map is fully loaded
         });
     </script>
 </body>

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IFAW - Elephant Corridors in the Greater Hwange Landscape</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    
+    <!-- Leaflet Fullscreen CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.0.0/Control.FullScreen.css" />
+    
+    <!-- Leaflet MarkerCluster CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/MarkerCluster.Default.css" />
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="header">
+        <div class="logo">
+            <img src="images/ifaw-logo.png" alt="IFAW Logo">
+        </div>
+        <h1>ELEPHANT CORRIDORS IN THE GREATER HWANGE LANDSCAPE</h1>
+        <div class="north-arrow">
+            <img src="images/north-arrow.png" alt="North Arrow">
+        </div>
+    </div>
+    
+    <div class="container">
+        <div class="sidebar">
+            <h2>Layers</h2>
+            <div class="layer-control">
+                <h3>Base Map</h3>
+                <div id="basemap-control"></div>
+                
+                <h3>Land Type</h3>
+                <div id="landtype-control"></div>
+                
+                <h3>Features</h3>
+                <div id="features-control"></div>
+            </div>
+            
+            <div class="legend">
+                <h3>Legend</h3>
+                <div id="legend-content"></div>
+            </div>
+        </div>
+        
+        <div id="map"></div>
+    </div>
+    
+    <div class="footer">
+        <p>&copy; IFAW 2025 | Map Data: OpenStreetMap and contributors, CC-BY-SA</p>
+    </div>
+    
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    
+    <!-- Leaflet Fullscreen JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.fullscreen/2.0.0/Control.FullScreen.js"></script>
+    
+    <!-- Leaflet MarkerCluster JS -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.3/leaflet.markercluster.js"></script>
+    
+    <!-- Leaflet.heat for heatmap if needed -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.heat/0.2.0/leaflet-heat.js"></script>
+    
+    <!-- Leaflet-Polyline-Decorator for animated arrows -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet-polylinedecorator/1.6.0/leaflet.polylineDecorator.min.js"></script>
+    
+    <!-- Custom JS -->
+    <script src="js/config.js"></script>
+    <script src="js/map.js"></script>
+</body>
+</html>

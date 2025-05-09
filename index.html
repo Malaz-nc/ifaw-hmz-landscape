@@ -18,6 +18,68 @@
     
     <!-- Custom CSS -->
     <link rel="stylesheet" href="css/style.css">
+    
+    <style>
+        /* Additional styles to match the reference map */
+        #sidebar {
+            width: 250px;
+        }
+        
+        .sidebar-title {
+            background-color: #3373b4;
+        }
+        
+        .control-section h3 {
+            color: #3373b4;
+        }
+        
+        /* Custom styling for labels */
+        .chief-label, .poi-label {
+            background: transparent;
+            border: none;
+            font-weight: bold;
+        }
+        
+        /* Updated legend styles */
+        .legend-item {
+            display: flex;
+            align-items: center;
+            margin: 4px 0;
+        }
+        
+        .legend-color {
+            width: 16px;
+            height: 16px;
+            margin-right: 8px;
+            border: 1px solid #888;
+        }
+        
+        .legend-line {
+            height: 0;
+            margin-right: 8px;
+        }
+        
+        .legend-point {
+            margin-right: 8px;
+        }
+        
+        /* Success notification */
+        .success-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            font-size: 14px;
+            max-width: 80%;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
     <div id="header">
@@ -129,5 +191,22 @@
     <!-- Custom JS -->
     <script src="js/config.js"></script>
     <script src="js/map.js"></script>
+    <script src="js/map-fixes.js"></script>
+    
+    <script>
+        // Call the fix function when everything is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Document ready, waiting for map to initialize...");
+            // Wait to make sure map is initialized
+            setTimeout(function() {
+                if (typeof fixMapIssues === 'function') {
+                    console.log("Applying map fixes...");
+                    fixMapIssues();
+                } else {
+                    console.error("fixMapIssues function not found!");
+                }
+            }, 3000);
+        });
+    </script>
 </body>
 </html>

@@ -51,13 +51,31 @@
             text-align: center;
         }
         
+        /* Success notification */
+        .success-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 15px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            font-size: 14px;
+            max-width: 80%;
+            text-align: center;
+        }
+        
         /* Feature labels */
         .chiefs-label div, 
         .pointsOfInterest-label div,
         .chizariraNationalPark-label div,
         .chirisaSafari-label div,
         .cheteSafariArea-label div,
-        .forestArea-label div {
+        .forestArea-label div,
+        .matetsiUnits-label div {
             background: rgba(255, 255, 255, 0.8) !important;
             padding: 3px 6px !important;
             border-radius: 3px !important;
@@ -104,6 +122,7 @@
                     <label><input type="checkbox" class="layer-control" data-layer="chizariraNationalPark" checked> Chizarira National Park</label>
                     <label><input type="checkbox" class="layer-control" data-layer="chirisaSafari" checked> Chirisa Safari Area</label>
                     <label><input type="checkbox" class="layer-control" data-layer="cheteSafariArea" checked> Chete Safari Area</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="matetsiUnits" checked> Matetsi Safari Area</label>
                 </div>
             </div>
             

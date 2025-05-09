@@ -3,7 +3,7 @@ const CONFIG = {
     mapCenter: [-18.3, 26.5],
     
     // Initial zoom level
-    initialZoom: 8,
+    initialZoom: 7,
     
     // Min/max zoom levels
     minZoom: 6,

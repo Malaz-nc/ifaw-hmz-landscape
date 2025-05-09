@@ -11,56 +11,71 @@ let analysisData = {
 
 // Initialize map when the document is ready
 document.addEventListener('DOMContentLoaded', function() {
+    console.log("Document ready, initializing map...");
     initializeMap();
     initializeControls();
 });
 
 function initializeMap() {
-    // Create the map
-    map = L.map('map', {
-        center: CONFIG.mapCenter,
-        zoom: CONFIG.initialZoom,
-        minZoom: CONFIG.minZoom,
-        maxZoom: CONFIG.maxZoom,
-        fullscreenControl: true,
-        attributionControl: false // We'll add attribution in the footer
-    });
+    try {
+        console.log("Creating map...");
+        // Create the map
+        map = L.map('map', {
+            center: CONFIG.mapCenter,
+            zoom: CONFIG.initialZoom,
+            minZoom: CONFIG.minZoom,
+            maxZoom: CONFIG.maxZoom,
+            fullscreenControl: true,
+            attributionControl: false // We'll add attribution in the footer
+        });
 
-    // Add attribution to footer
-    const attributionText = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | IFAW 2025';
-    document.getElementById('footer').innerHTML = `<p>${attributionText}</p>`;
+        console.log("Map created successfully");
 
-    // Setup basemap layers
-    basemapLayers = CONFIG.basemaps;
-    basemapLayers.OpenStreetMap.addTo(map);
+        // Add attribution to footer
+        const attributionText = '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors | IFAW 2025';
+        document.getElementById('footer').innerHTML = `<p>${attributionText}</p>`;
 
-    // Add zoom control to top-right
-    L.control.zoom({
-        position: 'topright'
-    }).addTo(map);
+        // Setup basemap layers
+        console.log("Setting up basemap layers...");
+        basemapLayers = CONFIG.basemaps;
+        basemapLayers.OpenStreetMap.addTo(map);
 
-    // Add fullscreen control
-    L.control.fullscreen({
-        position: 'topright',
-        title: 'View Fullscreen',
-        titleCancel: 'Exit Fullscreen',
-        forceSeparateButton: true
-    }).addTo(map);
+        // Add zoom control to top-right
+        L.control.zoom({
+            position: 'topright'
+        }).addTo(map);
 
-    // Add scale control
-    L.control.scale({
-        imperial: false,
-        position: 'bottomright'
-    }).addTo(map);
+        // Add fullscreen control
+        L.control.fullscreen({
+            position: 'topright',
+            title: 'View Fullscreen',
+            titleCancel: 'Exit Fullscreen',
+            forceSeparateButton: true
+        }).addTo(map);
 
-    // Load all GeoJSON data
-    loadAllLayers().then(() => {
-        // Create and add the legend
-        createLegend();
-        
-        // Update analysis data
-        updateAnalysisData();
-    });
+        // Add scale control
+        L.control.scale({
+            imperial: false,
+            position: 'bottomright'
+        }).addTo(map);
+
+        console.log("Loading GeoJSON layers...");
+        // Load all GeoJSON data
+        loadAllLayers().then(() => {
+            console.log("All layers loaded successfully");
+            // Create and add the legend
+            createLegend();
+            
+            // Update analysis data
+            updateAnalysisData();
+        }).catch(error => {
+            console.error("Error loading layers:", error);
+            showErrorNotification("Error loading map layers. Please check console for details.");
+        });
+    } catch (error) {
+        console.error("Error initializing map:", error);
+        showErrorNotification("Failed to initialize map. Please check console for details.");
+    }
 }
 
 // Load all GeoJSON layers

@@ -47,7 +47,7 @@ const CONFIG = {
 
 // Global variables
 let map;
-let allLayers = {};
+let allLayers = {}; // Initialize empty object
 let basemapLayers = {};
 let activeBasemap = 'OpenStreetMap';
 let analysisData = {
@@ -284,6 +284,9 @@ async function loadAllLayers() {
                     fillOpacity: 0.7
                 };
             }
+        }).catch(error => {
+            console.error(`Error loading landuse layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading District Boundaries...");
@@ -295,6 +298,9 @@ async function loadAllLayers() {
                 fillOpacity: 0,
                 dashArray: '2, 2'
             }
+        }).catch(error => {
+            console.error(`Error loading district boundaries layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading IFAW Operating Wards...");
@@ -306,6 +312,9 @@ async function loadAllLayers() {
                 fillColor: '#90EE90',
                 fillOpacity: 0.3
             }
+        }).catch(error => {
+            console.error(`Error loading buffer wards layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading Community CA...");
@@ -317,11 +326,17 @@ async function loadAllLayers() {
                 fillColor: CONFIG.colors.communityCa,
                 fillOpacity: 0.5
             }
+        }).catch(error => {
+            console.error(`Error loading community CA layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading Wildlife Corridors...");
         // Load wildlife corridors with arrows
-        await loadCorridorsWithArrows();
+        await loadCorridorsWithArrows().catch(error => {
+            console.error(`Error loading wildlife corridors: ${error.message}`);
+            // Continue with other layers
+        });
         
         console.log("Loading Roads...");
         // Load roads
@@ -330,6 +345,9 @@ async function loadAllLayers() {
                 color: CONFIG.colors.roads.category1,
                 weight: 1.5
             }
+        }).catch(error => {
+            console.error(`Error loading roads layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading Rivers...");
@@ -339,6 +357,9 @@ async function loadAllLayers() {
                 color: CONFIG.colors.rivers,
                 weight: 1.5
             }
+        }).catch(error => {
+            console.error(`Error loading rivers layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading Water Sources...");
@@ -354,6 +375,9 @@ async function loadAllLayers() {
                     fillOpacity: 0.8
                 });
             }
+        }).catch(error => {
+            console.error(`Error loading water sources layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading Places...");
@@ -369,6 +393,9 @@ async function loadAllLayers() {
                     fillOpacity: 0.8
                 });
             }
+        }).catch(error => {
+            console.error(`Error loading places layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading Towns...");
@@ -384,6 +411,9 @@ async function loadAllLayers() {
                     fillOpacity: 0.8
                 });
             }
+        }).catch(error => {
+            console.error(`Error loading towns layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading Project Sites...");
@@ -395,6 +425,9 @@ async function loadAllLayers() {
                 fillOpacity: 0.2,
                 dashArray: '5, 5'
             }
+        }).catch(error => {
+            console.error(`Error loading project sites layer: ${error.message}`);
+            // Continue with other layers
         });
         
         console.log("Loading Matetsi Units...");
@@ -406,10 +439,13 @@ async function loadAllLayers() {
                 fillColor: CONFIG.colors.safariArea,
                 fillOpacity: 0.7
             }
+        }).catch(error => {
+            console.error(`Error loading matetsi units layer: ${error.message}`);
+            // Continue with other layers
         });
 
         console.log("Setting layer order...");
-        // Ensure proper z-index ordering
+        // Ensure proper z-index ordering - check if layers exist first
         if (allLayers['landuse']) allLayers['landuse'].bringToFront();
         if (allLayers['rivers']) allLayers['rivers'].bringToFront();
         if (allLayers['roads']) allLayers['roads'].bringToFront();
@@ -468,8 +504,12 @@ async function loadLayer(layerName, url, options = {}) {
         // Add to map by default if corresponding checkbox is checked
         const checkbox = document.querySelector(`.layer-control[data-layer="${layerName}"]`);
         if (checkbox && checkbox.checked) {
-            layer.addTo(map);
-            console.log(`Added ${layerName} to map`);
+            try {
+                map.addLayer(layer);
+                console.log(`Added ${layerName} to map`);
+            } catch (error) {
+                console.error(`Error adding ${layerName} to map:`, error);
+            }
         }
         
         return layer;
@@ -615,26 +655,32 @@ async function loadCorridorsWithArrows() {
                 weight: 1
             });
             
-            // Add arrow decorations
-            const arrowDecorator = L.polylineDecorator(polyline, {
-                patterns: [
-                    {
-                        offset: '5%',
-                        repeat: '15%',
-                        symbol: L.Symbol.arrowHead({
-                            pixelSize: 15,
-                            pathOptions: {
-                                color: CONFIG.colors.wildlifeCorridors,
-                                fillOpacity: 1,
-                                weight: 0
-                            }
-                        })
-                    }
-                ]
-            });
-            
-            // Add arrow decorator to the group
-            corridorsGroup.addLayer(arrowDecorator);
+            // Add arrow decorations - check if L.polylineDecorator exists
+            if (typeof L.polylineDecorator === 'function') {
+                const arrowDecorator = L.polylineDecorator(polyline, {
+                    patterns: [
+                        {
+                            offset: '5%',
+                            repeat: '15%',
+                            symbol: L.Symbol.arrowHead({
+                                pixelSize: 15,
+                                pathOptions: {
+                                    color: CONFIG.colors.wildlifeCorridors,
+                                    fillOpacity: 1,
+                                    weight: 0
+                                }
+                            })
+                        }
+                    ]
+                });
+                
+                // Add arrow decorator to the group
+                corridorsGroup.addLayer(arrowDecorator);
+            } else {
+                console.warn('L.polylineDecorator is not available. Make sure you have included the library.');
+                // Add the polyline as a fallback
+                corridorsGroup.addLayer(polyline);
+            }
         });
         
         // Add the corridors group to allLayers
@@ -643,7 +689,7 @@ async function loadCorridorsWithArrows() {
         // Add to map if checkbox is checked
         const checkbox = document.querySelector('.layer-control[data-layer="wildlife_corridors"]');
         if (checkbox && checkbox.checked) {
-            corridorsGroup.addTo(map);
+            map.addLayer(corridorsGroup);
         }
         
     } catch (error) {
@@ -774,189 +820,3 @@ function calculateLength(feature) {
     
     return length;
 }
-
-// Calculate area of a polygon feature in square kilometers
-function calculateArea(feature) {
-    if (!feature || !feature.geometry || (feature.geometry.type !== 'Polygon' && feature.geometry.type !== 'MultiPolygon')) {
-        return 0;
-    }
-    
-    let area = 0;
-    
-    try {
-        if (window.turf) {
-            area = turf.area(feature) / 1000000; // Convert square meters to square kilometers
-        } else {
-            // Very basic fallback if turf.js is not available
-            // This will be less accurate
-            if (feature.geometry.type === 'Polygon') {
-                // Approximate with a simple algorithm
-                area = 0; // Simplified - would need a proper algorithm here
-            } else if (feature.geometry.type === 'MultiPolygon') {
-                // Sum the areas of each polygon
-                area = 0; // Simplified - would need a proper algorithm here
-            }
-        }
-    } catch (error) {
-        console.error('Error calculating area:', error);
-        area = 0;
-    }
-    
-    return area;
-}
-
-// Update analysis data
-function updateAnalysisData() {
-    try {
-        // Calculate total landscape area
-        let totalArea = 0;
-        if (allLayers['landscapeboundary'] && map.hasLayer(allLayers['landscapeboundary'])) {
-            const data = allLayers['landscapeboundary'].toGeoJSON();
-            data.features.forEach(feature => {
-                totalArea += calculateArea(feature);
-            });
-        }
-        
-        // Calculate total corridor length
-        let corridorLength = 0;
-        if (allLayers['wildlife_corridors'] && map.hasLayer(allLayers['wildlife_corridors'])) {
-            const data = allLayers['wildlife_corridors'].toGeoJSON();
-            if (data && data.features) {
-                data.features.forEach(feature => {
-                    corridorLength += calculateLength(feature);
-                });
-            }
-        }
-        
-        // Count towns
-        let townsCount = 0;
-        if (allLayers['towns'] && map.hasLayer(allLayers['towns'])) {
-            // Try to get a more accurate count if possible
-            const townsData = allLayers['towns'].toGeoJSON();
-            if (townsData && townsData.features) {
-                townsCount = townsData.features.length;
-            }
-        }
-        
-        // Update analysis data object
-        analysisData = {
-            totalArea,
-            corridorLength,
-            townsCount
-        };
-        
-        // Update the DOM
-        const totalAreaElement = document.getElementById('total-area');
-        const corridorLengthElement = document.getElementById('corridor-length');
-        const townsCountElement = document.getElementById('towns-count');
-        
-        if (totalAreaElement) totalAreaElement.textContent = `${totalArea.toFixed(2)} km²`;
-        if (corridorLengthElement) corridorLengthElement.textContent = `${corridorLength.toFixed(2)} km`;
-        if (townsCountElement) townsCountElement.textContent = townsCount.toString();
-        
-    } catch (error) {
-        console.error('Error updating analysis data:', error);
-    }
-}
-
-// Helper function to show success notification
-function showSuccessNotification(message) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = 'success-notification';
-    notification.textContent = message;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.left = '50%';
-    notification.style.transform = 'translateX(-50%)';
-    notification.style.backgroundColor = '#4CAF50';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 15px';
-    notification.style.borderRadius = '4px';
-    notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
-    notification.style.zIndex = '10000';
-    notification.style.maxWidth = '80%';
-    notification.style.textAlign = 'center';
-    notification.style.fontSize = '14px';
-    
-    // Add close button
-    const closeBtn = document.createElement('span');
-    closeBtn.innerHTML = '&times;';
-    closeBtn.style.marginLeft = '10px';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.fontSize = '18px';
-    closeBtn.addEventListener('click', function() {
-        document.body.removeChild(notification);
-    });
-    
-    notification.appendChild(closeBtn);
-    
-    // Add to body
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-        }
-    }, 5000);
-}
-
-// Helper function to show error notification
-function showErrorNotification(message) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = 'error-notification';
-    notification.textContent = message;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.left = '50%';
-    notification.style.transform = 'translateX(-50%)';
-    notification.style.backgroundColor = '#ff5555';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 15px';
-    notification.style.borderRadius = '4px';
-    notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
-    notification.style.zIndex = '10000';
-    notification.style.maxWidth = '80%';
-    notification.style.textAlign = 'center';
-    notification.style.fontSize = '14px';
-    
-    // Add close button
-    const closeBtn = document.createElement('span');
-    closeBtn.innerHTML = '&times;';
-    closeBtn.style.marginLeft = '10px';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.fontSize = '18px';
-    closeBtn.addEventListener('click', function() {
-        document.body.removeChild(notification);
-    });
-    
-    notification.appendChild(closeBtn);
-    
-    // Add to body
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 8 seconds
-    setTimeout(() => {
-        if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-        }
-    }, 8000);
-}
-
-// Document ready function to ensure the fixes are applied after the map initializes
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Map-fixes.js loaded successfully");
-    // The main script already has a setTimeout for fixMapIssues function
-    // This is just a backup in case the main script's call fails
-    setTimeout(function() {
-        if (typeof map !== 'undefined' && !window.fixesApplied) {
-            console.log("Applying map fixes from map-fixes.js...");
-            fixMapIssues();
-            window.fixesApplied = true;
-        }
-    }, 8000);
-});

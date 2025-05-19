@@ -812,7 +812,51 @@ function updateAnalysisData() {
     }
 }
 
-// Show error notification
+// Helper function to show success notification
+function showSuccessNotification(message) {
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.className = 'success-notification';
+    notification.textContent = message;
+    notification.style.position = 'fixed';
+    notification.style.top = '20px';
+    notification.style.left = '50%';
+    notification.style.transform = 'translateX(-50%)';
+    notification.style.backgroundColor = '#4CAF50';
+    notification.style.color = 'white';
+    notification.style.padding = '10px 15px';
+    notification.style.borderRadius = '4px';
+    notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+    notification.style.zIndex = '10000';
+    notification.style.maxWidth = '80%';
+    notification.style.textAlign = 'center';
+    notification.style.fontSize = '14px';
+    
+    // Add close button
+    const closeBtn = document.createElement('span');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.marginLeft = '10px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.fontWeight = 'bold';
+    closeBtn.style.fontSize = '18px';
+    closeBtn.addEventListener('click', function() {
+        document.body.removeChild(notification);
+    });
+    
+    notification.appendChild(closeBtn);
+    
+    // Add to body
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+        }
+    }, 5000);
+}
+
+// Helper function to show error notification
 function showErrorNotification(message) {
     // Create notification element
     const notification = document.createElement('div');
@@ -828,4 +872,44 @@ function showErrorNotification(message) {
     notification.style.borderRadius = '4px';
     notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
     notification.style.zIndex = '10000';
-    notification.style
+    notification.style.maxWidth = '80%';
+    notification.style.textAlign = 'center';
+    notification.style.fontSize = '14px';
+    
+    // Add close button
+    const closeBtn = document.createElement('span');
+    closeBtn.innerHTML = '&times;';
+    closeBtn.style.marginLeft = '10px';
+    closeBtn.style.cursor = 'pointer';
+    closeBtn.style.fontWeight = 'bold';
+    closeBtn.style.fontSize = '18px';
+    closeBtn.addEventListener('click', function() {
+        document.body.removeChild(notification);
+    });
+    
+    notification.appendChild(closeBtn);
+    
+    // Add to body
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+        if (document.body.contains(notification)) {
+            document.body.removeChild(notification);
+        }
+    }, 8000);
+}
+
+// Document ready function to ensure the fixes are applied after the map initializes
+document.addEventListener('DOMContentLoaded', function() {
+    console.log("Map-fixes.js loaded successfully");
+    // The main script already has a setTimeout for fixMapIssues function
+    // This is just a backup in case the main script's call fails
+    setTimeout(function() {
+        if (typeof map !== 'undefined' && !window.fixesApplied) {
+            console.log("Applying map fixes from map-fixes.js...");
+            fixMapIssues();
+            window.fixesApplied = true;
+        }
+    }, 8000);
+});

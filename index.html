@@ -193,22 +193,50 @@
     <!-- Turf.js for spatial analysis -->
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
     
-    <!-- Custom JS -->
+    <!-- Custom JS - load in correct order -->
     <script src="js/config.js"></script>
     <script src="js/map.js"></script>
     <script src="js/map-fixes.js"></script>
     
     <script>
+        // Add a simple debugging utility
+        function debugMapState() {
+            console.log("DEBUG: Map state");
+            console.log("- map object exists:", typeof map !== 'undefined');
+            console.log("- CONFIG exists:", typeof CONFIG !== 'undefined');
+            console.log("- allLayers count:", Object.keys(allLayers || {}).length);
+            
+            if (typeof map !== 'undefined') {
+                console.log("- map center:", map.getCenter());
+                console.log("- map zoom:", map.getZoom());
+            }
+            
+            // Check if files are loaded
+            console.log("- config.js loaded:", typeof CONFIG !== 'undefined');
+            console.log("- map.js loaded:", typeof initializeMap === 'function');
+            console.log("- map-fixes.js loaded:", typeof fixMapIssues === 'function');
+        }
+
         // Call the fix function when everything is loaded
         document.addEventListener('DOMContentLoaded', function() {
             console.log("Document ready, waiting for map to initialize...");
+            
+            // Debug after short delay
+            setTimeout(debugMapState, 2000);
+            
             // Wait to make sure map is initialized
             setTimeout(function() {
                 if (typeof fixMapIssues === 'function') {
                     console.log("Applying map fixes...");
-                    fixMapIssues();
+                    try {
+                        fixMapIssues();
+                    } catch (error) {
+                        console.error("Error applying map fixes:", error);
+                        alert("There was an error initializing the map. Check the console for details.");
+                    }
                 } else {
                     console.error("fixMapIssues function not found!");
+                    debugMapState();
                 }
             }, 7000); // Wait 7 seconds to ensure map is fully loaded
         });

@@ -47,7 +47,7 @@ const CONFIG = {
 
 // Global variables
 let map;
-let allLayers = {}; // Initialize empty object
+let allLayers = {};
 let basemapLayers = {};
 let activeBasemap = 'OpenStreetMap';
 let analysisData = {
@@ -117,7 +117,7 @@ function initializeMap() {
             console.log("All layers loaded successfully");
             // Create and add the legend
             createLegend();
-            
+
             // Update analysis data
             updateAnalysisData();
         }).catch(error => {
@@ -174,7 +174,7 @@ function toggleLayer(layerName, isVisible) {
             console.warn(`Layer ${layerName} not found`);
             return;
         }
-        
+
         if (isVisible) {
             if (!map.hasLayer(allLayers[layerName])) {
                 map.addLayer(allLayers[layerName]);
@@ -201,7 +201,7 @@ function changeBasemap(basemapName) {
         if (map.hasLayer(basemapLayers[activeBasemap])) {
             map.removeLayer(basemapLayers[activeBasemap]);
         }
-        
+
         map.addLayer(basemapLayers[basemapName]);
         activeBasemap = basemapName;
         console.log(`Changed basemap to ${basemapName}`);
@@ -225,10 +225,10 @@ function addMobileSidebarToggle() {
         toggleBtn.style.border = '1px solid #ccc';
         toggleBtn.style.borderRadius = '4px';
         toggleBtn.style.cursor = 'pointer';
-        
+
         // Add to map container
         document.getElementById('main-container').appendChild(toggleBtn);
-        
+
         // Add event listener
         toggleBtn.addEventListener('click', function() {
             const sidebar = document.getElementById('sidebar');
@@ -250,13 +250,13 @@ async function loadAllLayers() {
                 dashArray: '5, 5'
             }
         });
-        
+
         console.log("Loading Land Use Layers...");
         // Load landuse
         await loadLayer('landuse', CONFIG.geojsonPaths.landuse, {
             style: function(feature) {
                 let fillColor = CONFIG.colors.communalLand; // Default
-                
+
                 // Set color based on land type property
                 if (feature.properties && feature.properties.LANDTYPE) {
                     if (feature.properties.LANDTYPE === 'Communal Land') {
@@ -275,7 +275,7 @@ async function loadAllLayers() {
                         fillColor = CONFIG.colors.communityCa;
                     }
                 }
-                
+
                 return {
                     fillColor: fillColor,
                     weight: 1,
@@ -284,11 +284,8 @@ async function loadAllLayers() {
                     fillOpacity: 0.7
                 };
             }
-        }).catch(error => {
-            console.error(`Error loading landuse layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading District Boundaries...");
         // Load district boundaries
         await loadLayer('districtboundaries', CONFIG.geojsonPaths.districtboundaries, {
@@ -298,11 +295,8 @@ async function loadAllLayers() {
                 fillOpacity: 0,
                 dashArray: '2, 2'
             }
-        }).catch(error => {
-            console.error(`Error loading district boundaries layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading IFAW Operating Wards...");
         // Load bufferwards
         await loadLayer('bufferwards', CONFIG.geojsonPaths.bufferwards, {
@@ -312,11 +306,8 @@ async function loadAllLayers() {
                 fillColor: '#90EE90',
                 fillOpacity: 0.3
             }
-        }).catch(error => {
-            console.error(`Error loading buffer wards layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading Community CA...");
         // Load Community CA
         await loadLayer('communityCa', CONFIG.geojsonPaths.communityCa, {
@@ -326,18 +317,12 @@ async function loadAllLayers() {
                 fillColor: CONFIG.colors.communityCa,
                 fillOpacity: 0.5
             }
-        }).catch(error => {
-            console.error(`Error loading community CA layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading Wildlife Corridors...");
         // Load wildlife corridors with arrows
-        await loadCorridorsWithArrows().catch(error => {
-            console.error(`Error loading wildlife corridors: ${error.message}`);
-            // Continue with other layers
-        });
-        
+        await loadCorridorsWithArrows();
+
         console.log("Loading Roads...");
         // Load roads
         await loadLayer('roads', CONFIG.geojsonPaths.roads, {
@@ -345,11 +330,8 @@ async function loadAllLayers() {
                 color: CONFIG.colors.roads.category1,
                 weight: 1.5
             }
-        }).catch(error => {
-            console.error(`Error loading roads layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading Rivers...");
         // Load rivers
         await loadLayer('rivers', CONFIG.geojsonPaths.rivers, {
@@ -357,11 +339,8 @@ async function loadAllLayers() {
                 color: CONFIG.colors.rivers,
                 weight: 1.5
             }
-        }).catch(error => {
-            console.error(`Error loading rivers layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading Water Sources...");
         // Load water sources
         await loadLayer('watersources', CONFIG.geojsonPaths.watersources, {
@@ -375,11 +354,8 @@ async function loadAllLayers() {
                     fillOpacity: 0.8
                 });
             }
-        }).catch(error => {
-            console.error(`Error loading water sources layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading Places...");
         // Load places
         await loadLayer('places', CONFIG.geojsonPaths.places, {
@@ -393,11 +369,8 @@ async function loadAllLayers() {
                     fillOpacity: 0.8
                 });
             }
-        }).catch(error => {
-            console.error(`Error loading places layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading Towns...");
         // Load towns
         await loadLayer('towns', CONFIG.geojsonPaths.towns, {
@@ -411,11 +384,8 @@ async function loadAllLayers() {
                     fillOpacity: 0.8
                 });
             }
-        }).catch(error => {
-            console.error(`Error loading towns layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading Project Sites...");
         // Load project sites
         await loadLayer('projectsites', CONFIG.geojsonPaths.projectsites, {
@@ -425,11 +395,8 @@ async function loadAllLayers() {
                 fillOpacity: 0.2,
                 dashArray: '5, 5'
             }
-        }).catch(error => {
-            console.error(`Error loading project sites layer: ${error.message}`);
-            // Continue with other layers
         });
-        
+
         console.log("Loading Matetsi Units...");
         // Load matetsi units
         await loadLayer('matetsiunits', CONFIG.geojsonPaths.matetsiunits, {
@@ -439,22 +406,19 @@ async function loadAllLayers() {
                 fillColor: CONFIG.colors.safariArea,
                 fillOpacity: 0.7
             }
-        }).catch(error => {
-            console.error(`Error loading matetsi units layer: ${error.message}`);
-            // Continue with other layers
         });
 
         console.log("Setting layer order...");
-        // Ensure proper z-index ordering - check if layers exist first
+        // Ensure proper z-index ordering
         if (allLayers['landuse']) allLayers['landuse'].bringToFront();
         if (allLayers['rivers']) allLayers['rivers'].bringToFront();
         if (allLayers['roads']) allLayers['roads'].bringToFront();
         if (allLayers['wildlife_corridors']) allLayers['wildlife_corridors'].bringToFront();
         if (allLayers['towns']) allLayers['towns'].bringToFront();
-        
+
         console.log("All layers loaded successfully");
         return true;
-        
+
     } catch (error) {
         console.error('Error loading layers:', error);
         showErrorNotification('Some layers could not be loaded. Check that all GeoJSON files are present in the data folder.');
@@ -470,10 +434,10 @@ async function loadLayer(layerName, url, options = {}) {
         if (!response.ok) {
             throw new Error(`Failed to load ${layerName} (${response.status}): ${response.statusText}`);
         }
-        
+
         const data = await response.json();
         console.log(`Successfully parsed ${layerName} GeoJSON data`);
-        
+
         // Add popup if not specified in options
         if (!options.onEachFeature) {
             options.onEachFeature = function(feature, layer) {
@@ -487,7 +451,7 @@ async function loadLayer(layerName, url, options = {}) {
                     }
                     popupContent += '</div>';
                     layer.bindPopup(popupContent);
-                    
+
                     // Add click event to show info in sidebar
                     layer.on('click', function(e) {
                         showFeatureInfo(feature, layerName);
@@ -495,328 +459,6 @@ async function loadLayer(layerName, url, options = {}) {
                 }
             };
         }
-        
+
         // Create and add the layer
-        console.log(`Creating ${layerName} layer...`);
-        const layer = L.geoJSON(data, options);
-        allLayers[layerName] = layer;
-        
-        // Add to map by default if corresponding checkbox is checked
-        const checkbox = document.querySelector(`.layer-control[data-layer="${layerName}"]`);
-        if (checkbox && checkbox.checked) {
-            try {
-                map.addLayer(layer);
-                console.log(`Added ${layerName} to map`);
-            } catch (error) {
-                console.error(`Error adding ${layerName} to map:`, error);
-            }
-        }
-        
-        return layer;
-    } catch (error) {
-        console.error(`Error loading ${layerName}:`, error);
-        showErrorNotification(`Failed to load ${layerName}. Check that the file exists in the data folder.`);
-        return null;
-    }
-}
-
-// Show feature information in the info panel
-function showFeatureInfo(feature, layerName) {
-    try {
-        const infoPanel = document.getElementById('info-panel');
-        const infoContent = document.getElementById('info-content');
-        
-        if (!infoPanel || !infoContent) {
-            console.error('Info panel elements not found');
-            return;
-        }
-        
-        // Set title
-        const infoHeader = document.querySelector('.info-header h3');
-        if (infoHeader) {
-            infoHeader.textContent = layerName.charAt(0).toUpperCase() + layerName.slice(1).replace(/([A-Z])/g, ' $1').trim() + ' Information';
-        }
-        
-        // Clear previous content
-        infoContent.innerHTML = '';
-        
-        // Add feature properties
-        if (feature.properties) {
-            let content = '';
-            for (const property in feature.properties) {
-                if (feature.properties[property]) {
-                    content += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
-                }
-            }
-            
-            // Add additional information based on layer type
-            if (layerName === 'corridors' || layerName === 'wildlife_corridors') {
-                // Calculate length if it's a corridor
-                try {
-                    const length = calculateLength(feature);
-                    content += `<p><strong>Estimated Length:</strong> ${length.toFixed(2)} km</p>`;
-                } catch (error) {
-                    console.error('Error calculating length:', error);
-                }
-            } else if (layerName === 'landuse' || layerName === 'communityCa' || layerName === 'matetsiunits') {
-                // Calculate area if it's a polygon
-                try {
-                    const area = calculateArea(feature);
-                    content += `<p><strong>Estimated Area:</strong> ${area.toFixed(2)} km²</p>`;
-                } catch (error) {
-                    console.error('Error calculating area:', error);
-                }
-            }
-            
-            infoContent.innerHTML = content;
-        } else {
-            infoContent.innerHTML = '<p>No information available for this feature.</p>';
-        }
-        
-        // Show the panel
-        infoPanel.style.display = 'block';
-    } catch (error) {
-        console.error('Error showing feature info:', error);
-    }
-}
-
-// Load wildlife corridors with animated arrows
-async function loadCorridorsWithArrows() {
-    try {
-        // First try wildlife_corridors
-        let response = await fetch(CONFIG.geojsonPaths.wildlife_corridors);
-        if (!response.ok) {
-            // If wildlife_corridors fails, try corridors
-            response = await fetch(CONFIG.geojsonPaths.corridors);
-            if (!response.ok) {
-                throw new Error(`Failed to load corridors`);
-            }
-        }
-        
-        const data = await response.json();
-        
-        // Create a group for corridors and arrows
-        const corridorsGroup = L.layerGroup();
-        
-        // Process each corridor line
-        data.features.forEach(feature => {
-            // Skip if geometry is missing or not a LineString
-            if (!feature.geometry || feature.geometry.type !== 'LineString' || !feature.geometry.coordinates || feature.geometry.coordinates.length < 2) {
-                console.warn('Corridor feature has invalid geometry');
-                return;
-            }
-            
-            // Create the corridor line
-            const corridorLine = L.geoJSON(feature, {
-                style: {
-                    color: CONFIG.colors.wildlifeCorridors,
-                    weight: 3,
-                    opacity: 1
-                }
-            });
-            
-            // Add popup
-            let popupContent = '<div class="custom-popup">';
-            popupContent += `<h3>Wildlife Corridor</h3>`;
-            if (feature.properties) {
-                for (const property in feature.properties) {
-                    if (feature.properties[property]) {
-                        popupContent += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
-                    }
-                }
-            }
-            
-            // Add corridor length
-            try {
-                const length = calculateLength(feature);
-                popupContent += `<p><strong>Estimated Length:</strong> ${length.toFixed(2)} km</p>`;
-            } catch (error) {
-                console.error('Error calculating length:', error);
-            }
-            
-            popupContent += '</div>';
-            corridorLine.bindPopup(popupContent);
-            
-            // Add click event to show info in sidebar
-            corridorLine.on('click', function(e) {
-                showFeatureInfo(feature, 'wildlife_corridors');
-            });
-            
-            // Add corridor to the group
-            corridorsGroup.addLayer(corridorLine);
-            
-            // Extract coordinates for arrow decorations
-            const coordinates = feature.geometry.coordinates;
-            
-            // Create polyline for the decorator
-            const latLngs = coordinates.map(coord => [coord[1], coord[0]]);
-            const polyline = L.polyline(latLngs, {
-                color: 'transparent',
-                weight: 1
-            });
-            
-            // Add arrow decorations - check if L.polylineDecorator exists
-            if (typeof L.polylineDecorator === 'function') {
-                const arrowDecorator = L.polylineDecorator(polyline, {
-                    patterns: [
-                        {
-                            offset: '5%',
-                            repeat: '15%',
-                            symbol: L.Symbol.arrowHead({
-                                pixelSize: 15,
-                                pathOptions: {
-                                    color: CONFIG.colors.wildlifeCorridors,
-                                    fillOpacity: 1,
-                                    weight: 0
-                                }
-                            })
-                        }
-                    ]
-                });
-                
-                // Add arrow decorator to the group
-                corridorsGroup.addLayer(arrowDecorator);
-            } else {
-                console.warn('L.polylineDecorator is not available. Make sure you have included the library.');
-                // Add the polyline as a fallback
-                corridorsGroup.addLayer(polyline);
-            }
-        });
-        
-        // Add the corridors group to allLayers
-        allLayers['wildlife_corridors'] = corridorsGroup;
-        
-        // Add to map if checkbox is checked
-        const checkbox = document.querySelector('.layer-control[data-layer="wildlife_corridors"]');
-        if (checkbox && checkbox.checked) {
-            map.addLayer(corridorsGroup);
-        }
-        
-    } catch (error) {
-        console.error('Error loading corridors with arrows:', error);
-        showErrorNotification('Error loading wildlife corridors');
-    }
-}
-
-// Create and add the legend to the map
-function createLegend() {
-    try {
-        const legendDiv = document.getElementById('legend-content');
-        
-        if (!legendDiv) {
-            console.error('Legend container not found');
-            return;
-        }
-        
-        legendDiv.innerHTML = '';
-        
-        // Land Types Legend
-        let legendHTML = '<div class="legend-section">';
-        legendHTML += '<h4 style="margin-bottom: 5px; color: #333;">Land Types</h4>';
-        
-        // Land type legend items
-        const landTypes = [
-            { color: CONFIG.colors.communalLand, label: 'Communal Land' },
-            { color: CONFIG.colors.targetForestLand, label: 'Forest Area' },
-            { color: CONFIG.colors.largeScaleFarming, label: 'Large Scale Farming' },
-            { color: CONFIG.colors.nationalPark, label: 'National Park' },
-            { color: CONFIG.colors.safariArea, label: 'Safari Area' },
-            { color: CONFIG.colors.smallScaleFarming, label: 'Small Scale Farming' },
-            { color: CONFIG.colors.communityCa, label: 'Community CA' }
-        ];
-        
-        landTypes.forEach(item => {
-            legendHTML += `
-                <div class="legend-item">
-                    <div class="legend-color" style="background-color: ${item.color};"></div>
-                    <div class="legend-label">${item.label}</div>
-                </div>
-            `;
-        });
-        
-        legendHTML += '</div>';
-        
-        // Line Features Legend
-        legendHTML += '<div class="legend-section">';
-        legendHTML += '<h4 style="margin-bottom: 5px; color: #333;">Features</h4>';
-        
-        // Line features legend items
-        const lineFeatures = [
-            { color: CONFIG.colors.wildlifeCorridors, label: 'Wildlife Corridors', thickness: 3 },
-            { color: CONFIG.colors.rivers, label: 'Rivers', thickness: 2 },
-            { color: CONFIG.colors.roads.category1, label: 'Roads', thickness: 2 }
-        ];
-        
-        lineFeatures.forEach(item => {
-            legendHTML += `
-                <div class="legend-item">
-                    <div class="legend-line" style="border-top: ${item.thickness}px solid ${item.color};"></div>
-                    <div class="legend-label">${item.label}</div>
-                </div>
-            `;
-        });
-        
-        // Point Features Legend
-        const pointFeatures = [
-            { color: '#FF0000', label: 'Towns', type: 'circle' },
-            { color: '#0078FF', label: 'Water Sources', type: 'circle' },
-            { color: '#FF7F00', label: 'Places', type: 'circle' }
-        ];
-        
-        pointFeatures.forEach(item => {
-            if (item.type === 'circle') {
-                legendHTML += `
-                    <div class="legend-item">
-                        <div class="legend-point" style="background-color: ${item.color}; border-radius: 50%;"></div>
-                        <div class="legend-label">${item.label}</div>
-                    </div>
-                `;
-            }
-        });
-        
-        legendHTML += '</div>';
-        
-        // Set the legend HTML
-        legendDiv.innerHTML = legendHTML;
-    } catch (error) {
-        console.error('Error creating legend:', error);
-    }
-}
-
-// Calculate length of a linestring feature in kilometers
-function calculateLength(feature) {
-    if (!feature || !feature.geometry || (feature.geometry.type !== 'LineString' && feature.geometry.type !== 'MultiLineString')) {
-        return 0;
-    }
-    
-    let length = 0;
-    
-    try {
-        if (window.turf) {
-            length = turf.length(feature, {units: 'kilometers'});
-        } else {
-            // Fallback manual calculation if turf.js is not available
-            if (feature.geometry.type === 'LineString') {
-                const coords = feature.geometry.coordinates;
-                for (let i = 1; i < coords.length; i++) {
-                    const p1 = L.latLng(coords[i-1][1], coords[i-1][0]);
-                    const p2 = L.latLng(coords[i][1], coords[i][0]);
-                    length += p1.distanceTo(p2) / 1000; // Convert meters to kilometers
-                }
-            } else if (feature.geometry.type === 'MultiLineString') {
-                feature.geometry.coordinates.forEach(line => {
-                    for (let i = 1; i < line.length; i++) {
-                        const p1 = L.latLng(line[i-1][1], line[i-1][0]);
-                        const p2 = L.latLng(line[i][1], line[i][0]);
-                        length += p1.distanceTo(p2) / 1000; // Convert meters to kilometers
-                    }
-                });
-            }
-        }
-    } catch (error) {
-        console.error('Error calculating length:', error);
-        length = 0;
-    }
-    
-    return length;
-}
+        console.log

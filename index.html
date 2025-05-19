@@ -196,7 +196,366 @@
     <!-- Custom JS - load in correct order -->
     <script src="js/config.js"></script>
     <script src="js/map.js"></script>
-    <script src="js/map-fixes.js"></script>
+    
+    <!-- Define the fixMapIssues function here to ensure it's available -->
+    <script>
+        // Calculate length of a LineString or MultiLineString feature in kilometers
+        function calculateLength(feature) {
+            if (!feature || !feature.geometry || (feature.geometry.type !== 'LineString' && feature.geometry.type !== 'MultiLineString')) {
+                return 0;
+            }
+            
+            let length = 0;
+            
+            try {
+                if (feature.geometry.type === 'LineString') {
+                    const line = feature.geometry.coordinates;
+                    for (let i = 1; i < line.length; i++) {
+                        const p1 = L.latLng(line[i-1][1], line[i-1][0]);
+                        const p2 = L.latLng(line[i][1], line[i][0]);
+                        length += p1.distanceTo(p2) / 1000; // Convert meters to kilometers
+                    }
+                } else if (feature.geometry.type === 'MultiLineString') {
+                    feature.geometry.coordinates.forEach(line => {
+                        for (let i = 1; i < line.length; i++) {
+                            const p1 = L.latLng(line[i-1][1], line[i-1][0]);
+                            const p2 = L.latLng(line[i][1], line[i][0]);
+                            length += p1.distanceTo(p2) / 1000; // Convert meters to kilometers
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error calculating length:', error);
+                length = 0;
+            }
+            
+            return length;
+        }
+
+        // Calculate area of a polygon feature in square kilometers
+        function calculateArea(feature) {
+            if (!feature || !feature.geometry || (feature.geometry.type !== 'Polygon' && feature.geometry.type !== 'MultiPolygon')) {
+                return 0;
+            }
+            
+            let area = 0;
+            
+            try {
+                if (window.turf) {
+                    area = turf.area(feature) / 1000000; // Convert square meters to square kilometers
+                } else {
+                    // Very basic fallback if turf.js is not available
+                    // This will be less accurate
+                    if (feature.geometry.type === 'Polygon') {
+                        // Approximate with a simple algorithm
+                        area = 0; // Simplified - would need a proper algorithm here
+                    } else if (feature.geometry.type === 'MultiPolygon') {
+                        // Sum the areas of each polygon
+                        area = 0; // Simplified - would need a proper algorithm here
+                    }
+                }
+            } catch (error) {
+                console.error('Error calculating area:', error);
+                area = 0;
+            }
+            
+            return area;
+        }
+
+        // Helper function to show success notification
+        function showSuccessNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'success-notification';
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.backgroundColor = '#4CAF50';
+            notification.style.color = 'white';
+            notification.style.padding = '10px 15px';
+            notification.style.borderRadius = '4px';
+            notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+            notification.style.zIndex = '10000';
+            notification.style.maxWidth = '80%';
+            notification.style.textAlign = 'center';
+            notification.style.fontSize = '14px';
+            
+            // Add close button
+            const closeBtn = document.createElement('span');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.style.marginLeft = '10px';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.style.fontWeight = 'bold';
+            closeBtn.style.fontSize = '18px';
+            closeBtn.addEventListener('click', function() {
+                document.body.removeChild(notification);
+            });
+            
+            notification.appendChild(closeBtn);
+            
+            // Add to body
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 5000);
+        }
+
+        // Helper function to show error notification
+        function showErrorNotification(message) {
+            // Create notification element
+            const notification = document.createElement('div');
+            notification.className = 'error-notification';
+            notification.textContent = message;
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.backgroundColor = '#ff5555';
+            notification.style.color = 'white';
+            notification.style.padding = '10px 15px';
+            notification.style.borderRadius = '4px';
+            notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
+            notification.style.zIndex = '10000';
+            notification.style.maxWidth = '80%';
+            notification.style.textAlign = 'center';
+            notification.style.fontSize = '14px';
+            
+            // Add close button
+            const closeBtn = document.createElement('span');
+            closeBtn.innerHTML = '&times;';
+            closeBtn.style.marginLeft = '10px';
+            closeBtn.style.cursor = 'pointer';
+            closeBtn.style.fontWeight = 'bold';
+            closeBtn.style.fontSize = '18px';
+            closeBtn.addEventListener('click', function() {
+                document.body.removeChild(notification);
+            });
+            
+            notification.appendChild(closeBtn);
+            
+            // Add to body
+            document.body.appendChild(notification);
+            
+            // Auto-remove after 8 seconds
+            setTimeout(() => {
+                if (document.body.contains(notification)) {
+                    document.body.removeChild(notification);
+                }
+            }, 8000);
+        }
+
+        // Bind popup to feature
+        function bindPopupToFeature(feature, layer) {
+            if (feature.properties) {
+                let popupContent = "<div class='feature-popup'>";
+                for (const key in feature.properties) {
+                    popupContent += `<p><strong>${key}:</strong> ${feature.properties[key]}</p>`;
+                }
+                popupContent += "</div>";
+                layer.bindPopup(popupContent);
+            }
+        }
+
+        // Fix map issues function
+        function fixMapIssues() {
+            console.log("Fixing map issues...");
+            
+            // Fix file paths for GeoJSON layers
+            const filePathFixes = {
+                'landuse': 'landuse.geojson',
+                'districtboundaries': 'Districtboundaries.geojson',
+                'communityCa': 'communityCA.geojson',
+                'matetsiunits': 'matetsiunits.geojson'
+            };
+            
+            // Try to load or reload problematic layers
+            for (const [layerId, filePath] of Object.entries(filePathFixes)) {
+                if (typeof allLayers === 'undefined' || !allLayers[layerId]) {
+                    loadLayer(layerId, filePath);
+                }
+            }
+            
+            // Update analysis content with real data
+            updateAnalysisContent();
+            
+            window.fixesApplied = true;
+            console.log("Map fixes applied successfully!");
+        }
+        
+        // Load a layer
+        function loadLayer(layerId, filePath) {
+            console.log(`Attempting to load layer: ${layerId} from data/${filePath}`);
+            
+            fetch(`data/${filePath}`)
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`Failed to load ${layerId} (${response.status}): ${response.statusText}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    console.log(`Successfully loaded ${layerId} data`);
+                    
+                    // Create layer based on type
+                    const layerStyle = getStyleForLayer(layerId);
+                    let layer;
+                    
+                    if (['places', 'towns', 'watersources'].includes(layerId)) {
+                        // Point layers
+                        layer = L.geoJSON(data, {
+                            pointToLayer: function(feature, latlng) {
+                                return L.circleMarker(latlng, layerStyle);
+                            },
+                            onEachFeature: function(feature, layer) {
+                                bindPopupToFeature(feature, layer);
+                            }
+                        });
+                    } else {
+                        // Polygon or line layers
+                        layer = L.geoJSON(data, {
+                            style: function() {
+                                return layerStyle;
+                            },
+                            onEachFeature: function(feature, layer) {
+                                bindPopupToFeature(feature, layer);
+                            }
+                        });
+                    }
+                    
+                    // Add layer to map and store in allLayers
+                    if (typeof map !== 'undefined') {
+                        layer.addTo(map);
+                        
+                        if (typeof window.allLayers === 'undefined') {
+                            window.allLayers = {};
+                        }
+                        
+                        window.allLayers[layerId] = layer;
+                        console.log(`Added ${layerId} layer to map`);
+                        
+                        // Check visibility based on checkbox
+                        const checkbox = document.querySelector(`.layer-control[data-layer="${layerId}"]`);
+                        if (checkbox && !checkbox.checked) {
+                            map.removeLayer(layer);
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error loading layer ${layerId}:`, error);
+                    showErrorNotification(`Failed to load ${layerId} layer. Check console for details.`);
+                });
+        }
+        
+        // Get style for layer
+        function getStyleForLayer(layerId) {
+            const styleMap = {
+                'landuse': {
+                    color: '#8BC34A',
+                    weight: 1,
+                    opacity: 0.7,
+                    fillOpacity: 0.3
+                },
+                'districtboundaries': {
+                    color: '#9C27B0',
+                    weight: 2,
+                    opacity: 0.7,
+                    fillOpacity: 0.1
+                },
+                'communityCa': {
+                    color: '#FFEB3B',
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.3
+                },
+                'matetsiunits': {
+                    color: '#FF9800',
+                    weight: 1,
+                    opacity: 0.8,
+                    fillOpacity: 0.3
+                },
+                'places': {
+                    radius: 5,
+                    fillColor: '#9C27B0',
+                    color: '#000',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                },
+                'towns': {
+                    radius: 7,
+                    fillColor: '#F44336',
+                    color: '#000',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                },
+                'watersources': {
+                    radius: 6,
+                    fillColor: '#03A9F4',
+                    color: '#0288D1',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                }
+            };
+            
+            return styleMap[layerId] || {
+                color: '#888888',
+                weight: 2,
+                opacity: 0.7,
+                fillOpacity: 0.3
+            };
+        }
+        
+        // Update analysis content
+        function updateAnalysisContent() {
+            console.log("Updating analysis content...");
+            
+            setTimeout(() => {
+                let totalArea = 0;
+                let corridorLength = 0;
+                let townsCount = 0;
+                
+                // Calculate total landscape area
+                if (allLayers && allLayers.landscapeboundary) {
+                    allLayers.landscapeboundary.eachLayer(function(layer) {
+                        if (layer.feature) {
+                            totalArea += calculateArea(layer.feature);
+                        }
+                    });
+                }
+                
+                // Calculate corridor length
+                if (allLayers && allLayers.wildlife_corridors) {
+                    allLayers.wildlife_corridors.eachLayer(function(layer) {
+                        if (layer.feature) {
+                            corridorLength += calculateLength(layer.feature);
+                        }
+                    });
+                }
+                
+                // Count towns
+                if (allLayers && allLayers.towns) {
+                    allLayers.towns.eachLayer(function() {
+                        townsCount++;
+                    });
+                }
+                
+                // Update the display
+                document.getElementById('total-area').textContent = totalArea.toFixed(2) + ' km²';
+                document.getElementById('corridor-length').textContent = corridorLength.toFixed(2) + ' km';
+                document.getElementById('towns-count').textContent = townsCount;
+                
+                console.log("Analysis content updated");
+            }, 2000); // Give time for layers to load
+        }
+    </script>
     
     <script>
         // Add a simple debugging utility
@@ -214,7 +573,7 @@
             // Check if files are loaded
             console.log("- config.js loaded:", typeof CONFIG !== 'undefined');
             console.log("- map.js loaded:", typeof initializeMap === 'function');
-            console.log("- map-fixes.js loaded:", typeof fixMapIssues === 'function');
+            console.log("- fixMapIssues defined:", typeof fixMapIssues === 'function');
         }
 
         // Call the fix function when everything is loaded
@@ -230,15 +589,16 @@
                     console.log("Applying map fixes...");
                     try {
                         fixMapIssues();
+                        showSuccessNotification("Map initialized successfully!");
                     } catch (error) {
                         console.error("Error applying map fixes:", error);
-                        alert("There was an error initializing the map. Check the console for details.");
+                        showErrorNotification("There was an error initializing the map. Check the console for details.");
                     }
                 } else {
                     console.error("fixMapIssues function not found!");
                     debugMapState();
                 }
-            }, 7000); // Wait 7 seconds to ensure map is fully loaded
+            }, 6000); // Wait 6 seconds to ensure map is fully loaded
         });
     </script>
 </body>

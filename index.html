@@ -69,13 +69,9 @@
         }
         
         /* Feature labels */
-        .chiefs-label div, 
-        .pointsOfInterest-label div,
-        .chizariraNationalPark-label div,
-        .chirisaSafari-label div,
-        .cheteSafariArea-label div,
-        .forestArea-label div,
-        .matetsiUnits-label div {
+        .towns-label div, 
+        .places-label div,
+        .matetsiunits-label div {
             background: rgba(255, 255, 255, 0.8) !important;
             padding: 3px 6px !important;
             border-radius: 3px !important;
@@ -118,44 +114,35 @@
                 <div class="control-items">
                     <label><input type="checkbox" class="layer-control" data-layer="landuse" checked> Land Use</label>
                     <label><input type="checkbox" class="layer-control" data-layer="communityCa" checked> Community Conservation Areas</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="forestArea" checked> Forest Areas</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="chizariraNationalPark" checked> Chizarira National Park</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="chirisaSafari" checked> Chirisa Safari Area</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="cheteSafariArea" checked> Chete Safari Area</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="matetsiUnits" checked> Matetsi Safari Area</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="matetsiunits" checked> Matetsi Safari Area</label>
                 </div>
             </div>
             
             <div class="control-section">
                 <h3>Administrative</h3>
                 <div class="control-items">
-                    <label><input type="checkbox" class="layer-control" data-layer="landscapeBoundary" checked> Landscape Boundary</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="wards" checked> Wards</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="zimwards" checked> Zimbabwe Wards</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="landscapeboundary" checked> Landscape Boundary</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="districtboundaries" checked> District Boundaries</label>
                     <label><input type="checkbox" class="layer-control" data-layer="bufferwards" checked> IFAW Operating Wards</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="chiefs" checked> Chiefs with 15km Buffers</label>
                 </div>
             </div>
             
             <div class="control-section">
                 <h3>IFAW Activity Areas</h3>
                 <div class="control-items">
-                    <label><input type="checkbox" class="layer-control" data-layer="ifawProjectSites" checked> Current Project Sites</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="ifawProposedSites" checked> Proposed Project Sites</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="projectsites" checked> Project Sites</label>
                 </div>
             </div>
             
             <div class="control-section">
                 <h3>Features</h3>
                 <div class="control-items">
-                    <label><input type="checkbox" class="layer-control" data-layer="wildlifeCorridors" checked> Wildlife Corridors</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="wildlife_corridors" checked> Wildlife Corridors</label>
                     <label><input type="checkbox" class="layer-control" data-layer="rivers" checked> Rivers</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="waterSources" checked> Water Sources</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="roads" checked> All Roads</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="category1Road"> Category 1 Roads</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="category2Road"> Category 2 Roads</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="category3Road"> Category 3 Roads</label>
-                    <label><input type="checkbox" class="layer-control" data-layer="pointsOfInterest" checked> Points of Interest</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="watersources" checked> Water Sources</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="roads" checked> Roads</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="places" checked> Places</label>
+                    <label><input type="checkbox" class="layer-control" data-layer="towns" checked> Towns</label>
                 </div>
             </div>
             
@@ -169,7 +156,7 @@
                 <div id="analysis-content">
                     <p class="analysis-item">Total Area: <span id="total-area">Loading...</span></p>
                     <p class="analysis-item">Corridor Length: <span id="corridor-length">Loading...</span></p>
-                    <p class="analysis-item">Chiefs Count: <span id="chiefs-count">Loading...</span></p>
+                    <p class="analysis-item">Towns Count: <span id="towns-count">Loading...</span></p>
                 </div>
             </div>
             

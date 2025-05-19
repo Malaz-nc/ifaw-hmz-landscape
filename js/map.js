@@ -6,7 +6,7 @@ let activeBasemap = 'OpenStreetMap';
 let analysisData = {
     totalArea: 0,
     corridorLength: 0,
-    chiefsCount: 0
+    townsCount: 0
 };
 
 // Initialize map when the document is ready
@@ -140,23 +140,6 @@ function toggleLayer(layerName, isVisible) {
             }
         }
 
-        // Special case for the "roads" group
-        if (layerName === 'roads') {
-            const roadCheckboxes = document.querySelectorAll('.layer-control[data-layer^="category"]');
-            roadCheckboxes.forEach(checkbox => {
-                checkbox.disabled = isVisible;
-                if (isVisible) {
-                    // Hide individual road layers when "All Roads" is checked
-                    if (allLayers[checkbox.dataset.layer] && map.hasLayer(allLayers[checkbox.dataset.layer])) {
-                        map.removeLayer(allLayers[checkbox.dataset.layer]);
-                    }
-                    checkbox.checked = false;
-                } else {
-                    checkbox.disabled = false;
-                }
-            });
-        }
-
         // Update analysis data whenever a relevant layer is toggled
         updateAnalysisData();
     } catch (error) {
@@ -210,9 +193,9 @@ function addMobileSidebarToggle() {
 // Load all GeoJSON layers
 async function loadAllLayers() {
     try {
-        console.log("Loading HMZ Boundary...");
+        console.log("Loading Landscape Boundary...");
         // Load boundary first
-        await loadLayer('hmzBoundary', CONFIG.geojsonPaths.hmzBoundary, {
+        await loadLayer('landscapeboundary', CONFIG.geojsonPaths.landscapeboundary, {
             style: {
                 color: '#000',
                 weight: 2,
@@ -221,23 +204,44 @@ async function loadAllLayers() {
             }
         });
         
-        console.log("Loading Landscape Boundary...");
-        // Load landscapeBoundary
-        await loadLayer('landscapeBoundary', CONFIG.geojsonPaths.landscapeBoundary, {
-            style: {
-                color: '#333',
-                weight: 1.5,
-                fillOpacity: 0
+        console.log("Loading Land Use Layers...");
+        // Load landuse
+        await loadLayer('landuse', CONFIG.geojsonPaths.landuse, {
+            style: function(feature) {
+                let fillColor = CONFIG.colors.communalLand; // Default
+                
+                // Set color based on land type property
+                if (feature.properties && feature.properties.LANDTYPE) {
+                    if (feature.properties.LANDTYPE === 'Communal Land') {
+                        fillColor = CONFIG.colors.communalLand;
+                    } else if (feature.properties.LANDTYPE === 'Target Forest Land') {
+                        fillColor = CONFIG.colors.targetForestLand;
+                    } else if (feature.properties.LANDTYPE === 'Large Scale Farming') {
+                        fillColor = CONFIG.colors.largeScaleFarming;
+                    } else if (feature.properties.LANDTYPE === 'National Park') {
+                        fillColor = CONFIG.colors.nationalPark;
+                    } else if (feature.properties.LANDTYPE === 'Safari Area') {
+                        fillColor = CONFIG.colors.safariArea;
+                    } else if (feature.properties.LANDTYPE === 'Small Scale Farming') {
+                        fillColor = CONFIG.colors.smallScaleFarming;
+                    } else if (feature.properties.LANDTYPE === 'Community CA') {
+                        fillColor = CONFIG.colors.communityCa;
+                    }
+                }
+                
+                return {
+                    fillColor: fillColor,
+                    weight: 1,
+                    opacity: 1,
+                    color: '#666',
+                    fillOpacity: 0.7
+                };
             }
         });
-
-        console.log("Loading Land Use Layers...");
-        // Load landuse and landuse2 (with landuse on top as it takes precedence)
-        await loadLanduseLayers();
         
-        console.log("Loading Wards...");
-        // Load wards
-        await loadLayer('wards', CONFIG.geojsonPaths.wards, {
+        console.log("Loading District Boundaries...");
+        // Load district boundaries
+        await loadLayer('districtboundaries', CONFIG.geojsonPaths.districtboundaries, {
             style: {
                 color: '#666',
                 weight: 1,
@@ -257,17 +261,29 @@ async function loadAllLayers() {
             }
         });
         
-        console.log("Loading Chiefs with Buffers...");
-        // Load chiefs with buffer
-        await loadChiefsWithBuffer();
+        console.log("Loading Community CA...");
+        // Load Community CA
+        await loadLayer('communityCa', CONFIG.geojsonPaths.communityCa, {
+            style: {
+                color: '#FFA500',
+                weight: 1.5,
+                fillColor: CONFIG.colors.communityCa,
+                fillOpacity: 0.5
+            }
+        });
         
         console.log("Loading Wildlife Corridors...");
         // Load wildlife corridors with arrows
         await loadCorridorsWithArrows();
         
         console.log("Loading Roads...");
-        // Load roads by category
-        await loadRoadsByCategory();
+        // Load roads
+        await loadLayer('roads', CONFIG.geojsonPaths.roads, {
+            style: {
+                color: CONFIG.colors.roads.category1,
+                weight: 1.5
+            }
+        });
         
         console.log("Loading Rivers...");
         // Load rivers
@@ -280,7 +296,7 @@ async function loadAllLayers() {
         
         console.log("Loading Water Sources...");
         // Load water sources
-        await loadLayer('waterSources', CONFIG.geojsonPaths.waterSources, {
+        await loadLayer('watersources', CONFIG.geojsonPaths.watersources, {
             pointToLayer: function(feature, latlng) {
                 return L.circleMarker(latlng, {
                     radius: 4,
@@ -293,9 +309,9 @@ async function loadAllLayers() {
             }
         });
         
-        console.log("Loading Points of Interest...");
-        // Load points of interest
-        await loadLayer('pointsOfInterest', CONFIG.geojsonPaths.pointsOfInterest, {
+        console.log("Loading Places...");
+        // Load places
+        await loadLayer('places', CONFIG.geojsonPaths.places, {
             pointToLayer: function(feature, latlng) {
                 return L.circleMarker(latlng, {
                     radius: 5,
@@ -307,13 +323,51 @@ async function loadAllLayers() {
                 });
             }
         });
+        
+        console.log("Loading Towns...");
+        // Load towns
+        await loadLayer('towns', CONFIG.geojsonPaths.towns, {
+            pointToLayer: function(feature, latlng) {
+                return L.circleMarker(latlng, {
+                    radius: 5,
+                    fillColor: '#FF0000',
+                    color: '#000',
+                    weight: 1,
+                    opacity: 1,
+                    fillOpacity: 0.8
+                });
+            }
+        });
+        
+        console.log("Loading Project Sites...");
+        // Load project sites
+        await loadLayer('projectsites', CONFIG.geojsonPaths.projectsites, {
+            style: {
+                color: CONFIG.colors.ifawProjectSites,
+                weight: 2,
+                fillOpacity: 0.2,
+                dashArray: '5, 5'
+            }
+        });
+        
+        console.log("Loading Matetsi Units...");
+        // Load matetsi units
+        await loadLayer('matetsiunits', CONFIG.geojsonPaths.matetsiunits, {
+            style: {
+                color: '#333',
+                weight: 1.5,
+                fillColor: CONFIG.colors.safariArea,
+                fillOpacity: 0.7
+            }
+        });
 
         console.log("Setting layer order...");
         // Ensure proper z-index ordering
         if (allLayers['landuse']) allLayers['landuse'].bringToFront();
         if (allLayers['rivers']) allLayers['rivers'].bringToFront();
-        if (allLayers['corridors']) allLayers['corridors'].bringToFront();
-        if (allLayers['chiefs']) allLayers['chiefs'].bringToFront();
+        if (allLayers['roads']) allLayers['roads'].bringToFront();
+        if (allLayers['wildlife_corridors']) allLayers['wildlife_corridors'].bringToFront();
+        if (allLayers['towns']) allLayers['towns'].bringToFront();
         
         console.log("All layers loaded successfully");
         return true;
@@ -409,7 +463,7 @@ function showFeatureInfo(feature, layerName) {
             }
             
             // Add additional information based on layer type
-            if (layerName === 'corridors') {
+            if (layerName === 'corridors' || layerName === 'wildlife_corridors') {
                 // Calculate length if it's a corridor
                 try {
                     const length = calculateLength(feature);
@@ -417,7 +471,7 @@ function showFeatureInfo(feature, layerName) {
                 } catch (error) {
                     console.error('Error calculating length:', error);
                 }
-            } else if (layerName === 'landuse' || layerName === 'landuse2') {
+            } else if (layerName === 'landuse' || layerName === 'communityCa' || layerName === 'matetsiunits') {
                 // Calculate area if it's a polygon
                 try {
                     const area = calculateArea(feature);
@@ -439,238 +493,17 @@ function showFeatureInfo(feature, layerName) {
     }
 }
 
-// Load landuse and landuse2 with proper ordering
-async function loadLanduseLayers() {
-    try {
-        // Load landuse2 first (it goes underneath)
-        const landuse2 = await loadLayer('landuse2', CONFIG.geojsonPaths.landuse2, {
-            style: function(feature) {
-                let fillColor = CONFIG.colors.communalLand; // Default
-                
-                // Set color based on land type property
-                if (feature.properties && feature.properties.LANDTYPE) {
-                    if (feature.properties.LANDTYPE === 'Communal Land') {
-                        fillColor = CONFIG.colors.communalLand;
-                    } else if (feature.properties.LANDTYPE === 'Target Forest Land') {
-                        fillColor = CONFIG.colors.targetForestLand;
-                    } else if (feature.properties.LANDTYPE === 'Large Scale Farming') {
-                        fillColor = CONFIG.colors.largeScaleFarming;
-                    } else if (feature.properties.LANDTYPE === 'National Park') {
-                        fillColor = CONFIG.colors.nationalPark;
-                    } else if (feature.properties.LANDTYPE === 'Safari Area') {
-                        fillColor = CONFIG.colors.safariArea;
-                    } else if (feature.properties.LANDTYPE === 'Small Scale Farming') {
-                        fillColor = CONFIG.colors.smallScaleFarming;
-                    } else if (feature.properties.LANDTYPE === 'Community CA') {
-                        fillColor = CONFIG.colors.communityCa;
-                    }
-                }
-                
-                return {
-                    fillColor: fillColor,
-                    weight: 1,
-                    opacity: 1,
-                    color: '#666',
-                    fillOpacity: 0.7
-                };
-            },
-            onEachFeature: function(feature, layer) {
-                // Custom popup content for land use
-                let popupContent = '<div class="custom-popup">';
-                popupContent += `<h3>${feature.properties && feature.properties.LANDTYPE ? feature.properties.LANDTYPE : 'Land Use'}</h3>`;
-                
-                if (feature.properties) {
-                    for (const property in feature.properties) {
-                        if (feature.properties[property]) {
-                            popupContent += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
-                        }
-                    }
-                }
-                
-                // Add area calculation
-                try {
-                    const area = calculateArea(feature);
-                    popupContent += `<p><strong>Estimated Area:</strong> ${area.toFixed(2)} km²</p>`;
-                } catch (error) {
-                    console.error('Error calculating area:', error);
-                }
-                
-                popupContent += '</div>';
-                layer.bindPopup(popupContent);
-                
-                // Add click event to show info in sidebar
-                layer.on('click', function(e) {
-                    showFeatureInfo(feature, 'landuse2');
-                });
-            }
-        });
-        
-        // Then load landuse on top (it takes precedence)
-        const landuse = await loadLayer('landuse', CONFIG.geojsonPaths.landuse, {
-            style: function(feature) {
-                let fillColor = CONFIG.colors.communalLand; // Default
-                
-                // Set color based on land type property
-                if (feature.properties && feature.properties.LANDTYPE) {
-                    if (feature.properties.LANDTYPE === 'Communal Land') {
-                        fillColor = CONFIG.colors.communalLand;
-                    } else if (feature.properties.LANDTYPE === 'Target Forest Land') {
-                        fillColor = CONFIG.colors.targetForestLand;
-                    } else if (feature.properties.LANDTYPE === 'Large Scale Farming') {
-                        fillColor = CONFIG.colors.largeScaleFarming;
-                    } else if (feature.properties.LANDTYPE === 'National Park') {
-                        fillColor = CONFIG.colors.nationalPark;
-                    } else if (feature.properties.LANDTYPE === 'Safari Area') {
-                        fillColor = CONFIG.colors.safariArea;
-                    } else if (feature.properties.LANDTYPE === 'Small Scale Farming') {
-                        fillColor = CONFIG.colors.smallScaleFarming;
-                    } else if (feature.properties.LANDTYPE === 'Community CA') {
-                        fillColor = CONFIG.colors.communityCa;
-                    }
-                }
-                
-                return {
-                    fillColor: fillColor,
-                    weight: 1,
-                    opacity: 1,
-                    color: '#666',
-                    fillOpacity: 0.7
-                };
-            },
-            onEachFeature: function(feature, layer) {
-                // Custom popup content for land use
-                let popupContent = '<div class="custom-popup">';
-                popupContent += `<h3>${feature.properties && feature.properties.LANDTYPE ? feature.properties.LANDTYPE : 'Land Use'}</h3>`;
-                
-                if (feature.properties) {
-                    for (const property in feature.properties) {
-                        if (feature.properties[property]) {
-                            popupContent += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
-                        }
-                    }
-                }
-                
-                // Add area calculation
-                try {
-                    const area = calculateArea(feature);
-                    popupContent += `<p><strong>Estimated Area:</strong> ${area.toFixed(2)} km²</p>`;
-                } catch (error) {
-                    console.error('Error calculating area:', error);
-                }
-                
-                popupContent += '</div>';
-                layer.bindPopup(popupContent);
-                
-                // Add click event to show info in sidebar
-                layer.on('click', function(e) {
-                    showFeatureInfo(feature, 'landuse');
-                });
-            }
-        });
-        
-        // Make sure landuse is always on top
-        if (landuse && landuse2) {
-            landuse.bringToFront();
-        }
-        
-    } catch (error) {
-        console.error('Error loading landuse layers:', error);
-        showErrorNotification('Error loading land use layers');
-    }
-}
-
-// Load chiefs with 15km buffer
-async function loadChiefsWithBuffer() {
-    try {
-        const response = await fetch(CONFIG.geojsonPaths.chiefs);
-        if (!response.ok) {
-            throw new Error(`Failed to load chiefs (${response.status})`);
-        }
-        
-        const data = await response.json();
-        
-        // Create a group for both chiefs and their buffers
-        const chiefsGroup = L.layerGroup();
-        
-        // Process each chief point
-        data.features.forEach(feature => {
-            // Skip if geometry is missing
-            if (!feature.geometry || !feature.geometry.coordinates) {
-                console.warn('Chief feature missing geometry or coordinates');
-                return;
-            }
-            
-            // Create the chief marker
-            const chiefMarker = L.circleMarker([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
-                radius: 8,
-                fillColor: '#FF0000',
-                color: '#000',
-                weight: 1,
-                opacity: 1,
-                fillOpacity: 0.9
-            });
-            
-            // Add popup
-            let popupContent = '<div class="custom-popup">';
-            popupContent += `<h3>Chief</h3>`;
-            if (feature.properties) {
-                for (const property in feature.properties) {
-                    if (feature.properties[property]) {
-                        popupContent += `<p><strong>${property}:</strong> ${feature.properties[property]}</p>`;
-                    }
-                }
-            }
-            popupContent += '</div>';
-            chiefMarker.bindPopup(popupContent);
-            
-            // Add click event to show info in sidebar
-            chiefMarker.on('click', function(e) {
-                showFeatureInfo(feature, 'chiefs');
-            });
-            
-            // Add chief marker to the group
-            chiefsGroup.addLayer(chiefMarker);
-            
-            // Create a 15km buffer around the chief
-            // Convert 15km to degrees (approximate conversion, varies by latitude)
-            // At the equator, 1 degree is approximately 111 km
-            const bufferRadius = CONFIG.chiefBufferRadius / 111;
-            
-            const bufferCircle = L.circle([feature.geometry.coordinates[1], feature.geometry.coordinates[0]], {
-                radius: CONFIG.chiefBufferRadius * 1000, // Convert km to meters for Leaflet
-                color: CONFIG.colors.chiefBuffers,
-                fillColor: CONFIG.colors.chiefBuffers,
-                weight: 2,
-                opacity: 0.6,
-                fillOpacity: 0.1,
-                className: 'chief-buffer'
-            });
-            
-            // Add buffer to the group
-            chiefsGroup.addLayer(bufferCircle);
-        });
-        
-        // Add the chiefs group to allLayers
-        allLayers['chiefs'] = chiefsGroup;
-        
-        // Add to map if checkbox is checked
-        const checkbox = document.querySelector('.layer-control[data-layer="chiefs"]');
-        if (checkbox && checkbox.checked) {
-            chiefsGroup.addTo(map);
-        }
-        
-    } catch (error) {
-        console.error('Error loading chiefs with buffers:', error);
-        showErrorNotification('Error loading chiefs layer');
-    }
-}
-
 // Load wildlife corridors with animated arrows
 async function loadCorridorsWithArrows() {
     try {
-        const response = await fetch(CONFIG.geojsonPaths.corridors);
+        // First try wildlife_corridors
+        let response = await fetch(CONFIG.geojsonPaths.wildlife_corridors);
         if (!response.ok) {
-            throw new Error(`Failed to load corridors (${response.status})`);
+            // If wildlife_corridors fails, try corridors
+            response = await fetch(CONFIG.geojsonPaths.corridors);
+            if (!response.ok) {
+                throw new Error(`Failed to load corridors`);
+            }
         }
         
         const data = await response.json();
@@ -719,7 +552,7 @@ async function loadCorridorsWithArrows() {
             
             // Add click event to show info in sidebar
             corridorLine.on('click', function(e) {
-                showFeatureInfo(feature, 'corridors');
+                showFeatureInfo(feature, 'wildlife_corridors');
             });
             
             // Add corridor to the group
@@ -758,10 +591,10 @@ async function loadCorridorsWithArrows() {
         });
         
         // Add the corridors group to allLayers
-        allLayers['corridors'] = corridorsGroup;
+        allLayers['wildlife_corridors'] = corridorsGroup;
         
         // Add to map if checkbox is checked
-        const checkbox = document.querySelector('.layer-control[data-layer="corridors"]');
+        const checkbox = document.querySelector('.layer-control[data-layer="wildlife_corridors"]');
         if (checkbox && checkbox.checked) {
             corridorsGroup.addTo(map);
         }
@@ -769,66 +602,6 @@ async function loadCorridorsWithArrows() {
     } catch (error) {
         console.error('Error loading corridors with arrows:', error);
         showErrorNotification('Error loading wildlife corridors');
-    }
-}
-
-// Load roads by category
-async function loadRoadsByCategory() {
-    try {
-        // Load category 1 roads
-        const category1Roads = await loadLayer('category1Road', CONFIG.geojsonPaths.category1Road, {
-            style: {
-                color: CONFIG.colors.roads.category1,
-                weight: 3,
-                opacity: 1
-            }
-        });
-        
-        // Load category 2 roads
-        const category2Roads = await loadLayer('category2Road', CONFIG.geojsonPaths.category2Road, {
-            style: {
-                color: CONFIG.colors.roads.category2,
-                weight: 2,
-                opacity: 1
-            }
-        });
-        
-        // Load category 3 roads
-        const category3Roads = await loadLayer('category3Road', CONFIG.geojsonPaths.category3Road, {
-            style: {
-                color: CONFIG.colors.roads.category3,
-                weight: 1.5,
-                opacity: 1
-            }
-        });
-        
-        // Create a group for all roads
-        const roadsGroup = L.layerGroup();
-        
-        // Add individual road layers to the group if they exist
-        if (category1Roads) roadsGroup.addLayer(category1Roads);
-        if (category2Roads) roadsGroup.addLayer(category2Roads);
-        if (category3Roads) roadsGroup.addLayer(category3Roads);
-        
-        // Add the roads group to allLayers
-        allLayers['roads'] = roadsGroup;
-        
-        // Add to map if checkbox is checked
-        const checkbox = document.querySelector('.layer-control[data-layer="roads"]');
-        if (checkbox && checkbox.checked) {
-            roadsGroup.addTo(map);
-            
-            // Disable individual road category checkboxes
-            const roadCheckboxes = document.querySelectorAll('.layer-control[data-layer^="category"]');
-            roadCheckboxes.forEach(cb => {
-                cb.disabled = true;
-                cb.checked = false;
-            });
-        }
-        
-    } catch (error) {
-        console.error('Error loading roads by category:', error);
-        showErrorNotification('Error loading road layers');
     }
 }
 
@@ -846,11 +619,12 @@ function createLegend() {
         
         // Land Types Legend
         let legendHTML = '<div class="legend-section">';
+        legendHTML += '<h4 style="margin-bottom: 5px; color: #333;">Land Types</h4>';
         
         // Land type legend items
         const landTypes = [
             { color: CONFIG.colors.communalLand, label: 'Communal Land' },
-            { color: CONFIG.colors.targetForestLand, label: 'Target Forest Land' },
+            { color: CONFIG.colors.targetForestLand, label: 'Forest Area' },
             { color: CONFIG.colors.largeScaleFarming, label: 'Large Scale Farming' },
             { color: CONFIG.colors.nationalPark, label: 'National Park' },
             { color: CONFIG.colors.safariArea, label: 'Safari Area' },
@@ -871,14 +645,13 @@ function createLegend() {
         
         // Line Features Legend
         legendHTML += '<div class="legend-section">';
+        legendHTML += '<h4 style="margin-bottom: 5px; color: #333;">Features</h4>';
         
         // Line features legend items
         const lineFeatures = [
             { color: CONFIG.colors.wildlifeCorridors, label: 'Wildlife Corridors', thickness: 3 },
             { color: CONFIG.colors.rivers, label: 'Rivers', thickness: 2 },
-            { color: CONFIG.colors.roads.category1, label: 'Category 1 Road', thickness: 3 },
-            { color: CONFIG.colors.roads.category2, label: 'Category 2 Road', thickness: 2 },
-            { color: CONFIG.colors.roads.category3, label: 'Category 3 Road', thickness: 1.5 }
+            { color: CONFIG.colors.roads.category1, label: 'Roads', thickness: 2 }
         ];
         
         lineFeatures.forEach(item => {
@@ -890,17 +663,11 @@ function createLegend() {
             `;
         });
         
-        legendHTML += '</div>';
-        
         // Point Features Legend
-        legendHTML += '<div class="legend-section">';
-        
-        // Point features legend items
         const pointFeatures = [
-            { color: '#FF0000', label: 'Chiefs', type: 'circle' },
-            { color: CONFIG.colors.chiefBuffers, label: '15km Chief Buffer', type: 'circle-outline' },
+            { color: '#FF0000', label: 'Towns', type: 'circle' },
             { color: '#0078FF', label: 'Water Sources', type: 'circle' },
-            { color: '#FF7F00', label: 'Points of Interest', type: 'circle' }
+            { color: '#FF7F00', label: 'Places', type: 'circle' }
         ];
         
         pointFeatures.forEach(item => {
@@ -908,13 +675,6 @@ function createLegend() {
                 legendHTML += `
                     <div class="legend-item">
                         <div class="legend-point" style="background-color: ${item.color}; border-radius: 50%;"></div>
-                        <div class="legend-label">${item.label}</div>
-                    </div>
-                `;
-            } else if (item.type === 'circle-outline') {
-                legendHTML += `
-                    <div class="legend-item">
-                        <div class="legend-point" style="background-color: transparent; border: 2px solid ${item.color}; border-radius: 50%;"></div>
                         <div class="legend-label">${item.label}</div>
                     </div>
                 `;
@@ -1003,8 +763,8 @@ function updateAnalysisData() {
     try {
         // Calculate total landscape area
         let totalArea = 0;
-        if (allLayers['landscapeBoundary'] && map.hasLayer(allLayers['landscapeBoundary'])) {
-            const data = allLayers['landscapeBoundary'].toGeoJSON();
+        if (allLayers['landscapeboundary'] && map.hasLayer(allLayers['landscapeboundary'])) {
+            const data = allLayers['landscapeboundary'].toGeoJSON();
             data.features.forEach(feature => {
                 totalArea += calculateArea(feature);
             });
@@ -1012,8 +772,8 @@ function updateAnalysisData() {
         
         // Calculate total corridor length
         let corridorLength = 0;
-        if (allLayers['corridors'] && map.hasLayer(allLayers['corridors'])) {
-            const data = allLayers['corridors'].toGeoJSON();
+        if (allLayers['wildlife_corridors'] && map.hasLayer(allLayers['wildlife_corridors'])) {
+            const data = allLayers['wildlife_corridors'].toGeoJSON();
             if (data && data.features) {
                 data.features.forEach(feature => {
                     corridorLength += calculateLength(feature);
@@ -1021,29 +781,31 @@ function updateAnalysisData() {
             }
         }
         
-        // Count chiefs
-        let chiefsCount = 0;
-        if (allLayers['chiefs'] && map.hasLayer(allLayers['chiefs'])) {
+        // Count towns
+        let townsCount = 0;
+        if (allLayers['towns'] && map.hasLayer(allLayers['towns'])) {
             // Try to get a more accurate count if possible
-            const chiefsData = document.querySelectorAll('.leaflet-marker-icon').length;
-            chiefsCount = Math.max(1, Math.floor(chiefsData / 2)); // Rough estimate
+            const townsData = allLayers['towns'].toGeoJSON();
+            if (townsData && townsData.features) {
+                townsCount = townsData.features.length;
+            }
         }
         
         // Update analysis data object
         analysisData = {
             totalArea,
             corridorLength,
-            chiefsCount
+            townsCount
         };
         
         // Update the DOM
         const totalAreaElement = document.getElementById('total-area');
         const corridorLengthElement = document.getElementById('corridor-length');
-        const chiefsCountElement = document.getElementById('chiefs-count');
+        const townsCountElement = document.getElementById('towns-count');
         
         if (totalAreaElement) totalAreaElement.textContent = `${totalArea.toFixed(2)} km²`;
         if (corridorLengthElement) corridorLengthElement.textContent = `${corridorLength.toFixed(2)} km`;
-        if (chiefsCountElement) chiefsCountElement.textContent = chiefsCount.toString();
+        if (townsCountElement) townsCountElement.textContent = townsCount.toString();
         
     } catch (error) {
         console.error('Error updating analysis data:', error);
@@ -1066,63 +828,4 @@ function showErrorNotification(message) {
     notification.style.borderRadius = '4px';
     notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
     notification.style.zIndex = '10000';
-    notification.style.maxWidth = '80%';
-    notification.style.textAlign = 'center';
-    notification.style.fontSize = '14px';
-    notification.style.fontWeight = 'bold';
-    
-    // Add close button
-    const closeBtn = document.createElement('span');
-    closeBtn.innerHTML = '&times;';
-    closeBtn.style.marginLeft = '10px';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.fontSize = '18px';
-    closeBtn.addEventListener('click', function() {
-        document.body.removeChild(notification);
-    });
-    
-    notification.appendChild(closeBtn);
-    
-    // Add to body
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 10 seconds
-    setTimeout(() => {
-        if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-        }
-    }, 10000);
-    
-    // Log to console as well
-    console.error(message);
-}
-
-// Add event listener for map zoom change to adjust arrow size
-if (map) {
-    map.on('zoomend', function() {
-        // Could implement dynamic scaling of arrows based on zoom level
-        updateAnalysisData();
-    });
-}
-
-// Add event listener for window resize to handle responsive layout
-window.addEventListener('resize', function() {
-    // Check if we need to add/remove the mobile sidebar toggle
-    if (window.innerWidth <= 768) {
-        if (!document.querySelector('.sidebar-toggle')) {
-            addMobileSidebarToggle();
-        }
-    } else {
-        const toggle = document.querySelector('.sidebar-toggle');
-        if (toggle) {
-            toggle.parentNode.removeChild(toggle);
-        }
-        
-        // Ensure sidebar is visible on desktop
-        const sidebar = document.getElementById('sidebar');
-        if (sidebar) {
-            sidebar.classList.remove('active');
-        }
-    }
-});
+    notification.style

@@ -42,27 +42,19 @@ function updateConfigPaths() {
     // Update paths based on the files that actually exist in your directory
     CONFIG.geojsonPaths = {
         bufferwards: 'data/bufferwards.geojson',
-        category1Road: 'data/category1_road.geojson',
-        category2Road: 'data/category2_road.geojson',
-        category3Road: 'data/category3_road.geojson',
-        cheteSafariArea: 'data/chete_safari_area.geojson',
-        chiefs: 'data/chiefs.geojson',
-        chirisaSafari: 'data/chirisa_safari.geojson',
-        chizariraNationalPark: 'data/chizarira_nationalpark.geojson',
-        communityCa: 'data/Community_CA.geojson',
-        wildlifeCorridors: 'data/wildlife_corridors.geojson', // Using the correct file name
-        forestArea: 'data/forest_area.geojson',
-        ifawProjectSites: 'data/ifaw_project_sites.geojson',
-        ifawProposedSites: 'data/ifaw_proposed_sites.geojson',
-        landscapeBoundary: 'data/Landscape_boundary.geojson',
-        landuse: 'data/Landuse.geojson',
-        // landuse2 is not needed as per your request
-        pointsOfInterest: 'data/places.geojson', // Using 'places.geojson' instead of 'Places_of_interest.geojson'
+        communityCa: 'data/communityCa.geojson',
+        corridors: 'data/corridors.geojson',
+        districtboundaries: 'data/DistrictBoundaries.geojson',
+        landscapeboundary: 'data/landscapeboundary.geojson',
+        landuse: 'data/landuse.geojson',
+        matetsiunits: 'data/matetsiunits.geojson',
+        places: 'data/places.geojson',
+        projectsites: 'data/projectsites.geojson',
         rivers: 'data/rivers.geojson',
-        wards: 'data/wards.geojson',
-        waterSources: 'data/water_sources.geojson',
-        zimwards: 'data/zimwards.geojson',
-        matetsiUnits: 'data/matetsi_units.geojson' // Added the new file
+        roads: 'data/roads.geojson',
+        towns: 'data/towns.geojson',
+        watersources: 'data/watersources.geojson',
+        wildlife_corridors: 'data/wildlife_corridors.geojson'
     };
 
     // Update colors based on your requirements
@@ -168,8 +160,8 @@ function updateLayerStyles() {
         });
     }
     
-    if (allLayers['wildlifeCorridors'] && typeof allLayers['wildlifeCorridors'].setStyle === 'function') {
-        allLayers['wildlifeCorridors'].setStyle({
+    if (allLayers['wildlife_corridors'] && typeof allLayers['wildlife_corridors'].setStyle === 'function') {
+        allLayers['wildlife_corridors'].setStyle({
             color: CONFIG.colors.wildlifeCorridors,
             weight: 3
         });
@@ -186,53 +178,23 @@ function updateLayerStyles() {
 // Load all missing layers that failed to load initially
 async function loadMissingLayers() {
     const layersToLoad = [
-        { name: 'wildlifeCorridors', path: CONFIG.geojsonPaths.wildlifeCorridors, style: {
+        { name: 'wildlife_corridors', path: CONFIG.geojsonPaths.wildlife_corridors, style: {
             color: CONFIG.colors.wildlifeCorridors,
             weight: 3
         }},
-        { name: 'chizariraNationalPark', path: CONFIG.geojsonPaths.chizariraNationalPark, style: {
-            fillColor: CONFIG.colors.nationalPark,
-            color: '#333',
-            weight: 1,
-            fillOpacity: 0.7
-        }},
-        { name: 'chirisaSafari', path: CONFIG.geojsonPaths.chirisaSafari, style: {
-            fillColor: CONFIG.colors.safariArea,
-            color: '#333',
-            weight: 1,
-            fillOpacity: 0.7
-        }},
-        { name: 'cheteSafariArea', path: CONFIG.geojsonPaths.cheteSafariArea, style: {
-            fillColor: CONFIG.colors.safariArea,
-            color: '#333',
-            weight: 1,
-            fillOpacity: 0.7
-        }},
-        { name: 'matetsiUnits', path: CONFIG.geojsonPaths.matetsiUnits, style: {
+        { name: 'matetsiunits', path: CONFIG.geojsonPaths.matetsiunits, style: {
             fillColor: CONFIG.colors.safariArea, // Safari area color as requested
             color: '#333',
             weight: 1,
             fillOpacity: 0.7
         }},
-        { name: 'forestArea', path: CONFIG.geojsonPaths.forestArea, style: {
-            fillColor: CONFIG.colors.forestArea,
-            color: '#333',
-            weight: 1,
-            fillOpacity: 0.7
-        }},
-        { name: 'ifawProjectSites', path: CONFIG.geojsonPaths.ifawProjectSites, style: {
+        { name: 'projectsites', path: CONFIG.geojsonPaths.projectsites, style: {
             color: CONFIG.colors.ifawProjectSites,
             weight: 3,
             dashArray: '5, 5',
             fillOpacity: 0.1
         }},
-        { name: 'ifawProposedSites', path: CONFIG.geojsonPaths.ifawProposedSites, style: {
-            color: CONFIG.colors.ifawProposedSites,
-            weight: 3,
-            dashArray: '10, 5',
-            fillOpacity: 0.1
-        }},
-        { name: 'pointsOfInterest', path: CONFIG.geojsonPaths.pointsOfInterest, options: {
+        { name: 'places', path: CONFIG.geojsonPaths.places, options: {
             pointToLayer: function(feature, latlng) {
                 return L.circleMarker(latlng, {
                     radius: 5,
@@ -243,12 +205,6 @@ async function loadMissingLayers() {
                     fillOpacity: 0.8
                 });
             }
-        }},
-        { name: 'zimwards', path: CONFIG.geojsonPaths.zimwards, style: {
-            color: '#555',
-            weight: 1,
-            fillOpacity: 0,
-            dashArray: '3, 3'
         }}
     ];
     
@@ -352,7 +308,7 @@ function createFeaturePopup(feature, layer, layerName) {
 // Add labels to important features
 function addLabelsToFeatures() {
     // Add labels to point layers
-    const pointLayers = ['chiefs', 'pointsOfInterest', 'waterSources'];
+    const pointLayers = ['towns', 'places', 'watersources'];
     pointLayers.forEach(layerName => {
         if (allLayers[layerName]) {
             addLabelsToPointLayer(layerName);
@@ -360,7 +316,7 @@ function addLabelsToFeatures() {
     });
     
     // Add labels to polygon layers
-    const polygonLayers = ['chizariraNationalPark', 'chirisaSafari', 'cheteSafariArea', 'forestArea', 'matetsiUnits'];
+    const polygonLayers = ['matetsiunits'];
     polygonLayers.forEach(layerName => {
         if (allLayers[layerName]) {
             addLabelsToPolygonLayer(layerName);
@@ -403,9 +359,9 @@ function addLabelsToPointLayer(layerName) {
                 // Determine label text
                 let labelText = '';
                 
-                if (layerName === 'chiefs' && feature.properties) {
-                    // For chiefs, try these property names
-                    const nameProps = ['NAME', 'name', 'CHIEF', 'chief', 'Chief'];
+                if (layerName === 'towns' && feature.properties) {
+                    // For towns, try these property names
+                    const nameProps = ['NAME', 'name', 'TOWN', 'town'];
                     for (const prop of nameProps) {
                         if (feature.properties[prop]) {
                             labelText = feature.properties[prop];
@@ -413,8 +369,8 @@ function addLabelsToPointLayer(layerName) {
                         }
                     }
                     
-                    if (!labelText) labelText = 'Chief';
-                } else if (layerName === 'pointsOfInterest' && feature.properties) {
+                    if (!labelText) labelText = 'Town';
+                } else if (layerName === 'places' && feature.properties) {
                     // For POIs, try these property names
                     const nameProps = ['NAME', 'name', 'PLACE', 'place', 'TITLE', 'title'];
                     for (const prop of nameProps) {
@@ -425,7 +381,7 @@ function addLabelsToPointLayer(layerName) {
                     }
                     
                     if (!labelText) labelText = 'POI';
-                } else if (layerName === 'waterSources' && feature.properties) {
+                } else if (layerName === 'watersources' && feature.properties) {
                     // For water sources, try these property names
                     const nameProps = ['NAME', 'name', 'WATER', 'water', 'TYPE', 'type'];
                     for (const prop of nameProps) {
@@ -515,15 +471,7 @@ function addLabelsToPolygonLayer(layerName) {
                 let labelText = layerName.replace(/([A-Z])/g, ' $1').trim();
                 
                 // Lookup specific names for special areas
-                if (layerName === 'chizariraNationalPark') {
-                    labelText = 'Chizarira National Park';
-                } else if (layerName === 'chirisaSafari') {
-                    labelText = 'Chirisa Safari Area';
-                } else if (layerName === 'cheteSafariArea') {
-                    labelText = 'Chete Safari Area';
-                } else if (layerName === 'forestArea') {
-                    labelText = 'Forest Area';
-                } else if (layerName === 'matetsiUnits') {
+                if (layerName === 'matetsiunits') {
                     labelText = 'Matetsi Safari Area';
                 } else if (feature.properties) {
                     // Try to find a name property
@@ -615,39 +563,26 @@ function setCorrectLayerOrder() {
     // The layers from bottom to top
     const layerOrder = [
         // Base layers
-        'landscapeBoundary',
+        'landscapeboundary',
         'landuse',
         
-        // Protected areas
-        'forestArea',
-        'matetsiUnits',
-        'chizariraNationalPark',
-        'chirisaSafari',
-        'cheteSafariArea',
-        'communityCa',
-        
         // Administrative boundaries
-        'wards',
-        'zimwards',
+        'districtboundaries',
         'bufferwards',
         
         // IFAW areas
-        'ifawProposedSites',
-        'ifawProjectSites',
+        'projectsites',
         
         // Lines
         'rivers',
-        'category3Road',
-        'category2Road',
-        'category1Road',
         'roads',
         'corridors',
-        'wildlifeCorridors',
+        'wildlife_corridors',
         
-        // Points - chiefs on top as requested
-        'waterSources',
-        'pointsOfInterest',
-        'chiefs'
+        // Points
+        'watersources',
+        'places',
+        'towns'
     ];
     
     // Track which layers are visible to restore them later
@@ -729,7 +664,7 @@ function updateLegend() {
             </div>
             <div class="legend-item">
                 <div style="width: 16px; height: 16px; border: 1px dashed #555; background: transparent; margin-right: 8px;"></div>
-                <div class="legend-label">Wards</div>
+                <div class="legend-label">District Boundaries</div>
             </div>
             <div class="legend-item">
                 <div style="width: 16px; height: 16px; border: 1px solid #0077ff; background: rgba(0,119,255,0.2); margin-right: 8px;"></div>
@@ -743,10 +678,6 @@ function updateLegend() {
                 <div style="width: 16px; height: 3px; border-top: 3px dashed ${CONFIG.colors.ifawProjectSites}; margin-right: 8px;"></div>
                 <div class="legend-label">IFAW Project Sites</div>
             </div>
-            <div class="legend-item">
-                <div style="width: 16px; height: 3px; border-top: 3px dashed ${CONFIG.colors.ifawProposedSites}; margin-right: 8px;"></div>
-                <div class="legend-label">IFAW Proposed Sites</div>
-            </div>
         `;
         
         legendHTML += '</div>';
@@ -759,9 +690,7 @@ function updateLegend() {
         const lineFeatures = [
             { color: CONFIG.colors.wildlifeCorridors, label: 'Wildlife Corridors', thickness: 3 },
             { color: CONFIG.colors.rivers, label: 'Rivers', thickness: 2 },
-            { color: CONFIG.colors.roads.category1, label: 'Category 1 Road', thickness: 3 },
-            { color: CONFIG.colors.roads.category2, label: 'Category 2 Road', thickness: 2 },
-            { color: CONFIG.colors.roads.category3, label: 'Category 3 Road', thickness: 1.5 }
+            { color: CONFIG.colors.roads.category1, label: 'Roads', thickness: 3 }
         ];
         
         lineFeatures.forEach(item => {
@@ -775,10 +704,9 @@ function updateLegend() {
         
         // Points
         const pointFeatures = [
-            { color: '#FF0000', label: 'Chiefs', type: 'circle' },
-            { color: '#FF0000', label: '15km Chief Buffer', type: 'circle-outline' },
+            { color: '#FF7F00', label: 'Places', type: 'circle' },
             { color: '#0078FF', label: 'Water Sources', type: 'circle' },
-            { color: '#FF7F00', label: 'Points of Interest', type: 'circle' }
+            { color: '#FF0000', label: 'Towns', type: 'circle' }
         ];
         
         pointFeatures.forEach(item => {
@@ -842,75 +770,4 @@ function showSuccessNotification(message) {
     
     notification.appendChild(closeBtn);
     
-    // Add to body
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 5 seconds
-    setTimeout(() => {
-        if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-        }
-    }, 5000);
-}
-
-// Helper function to show error notification
-function showErrorNotification(message) {
-    // Create notification element
-    const notification = document.createElement('div');
-    notification.className = 'error-notification';
-    notification.textContent = message;
-    notification.style.position = 'fixed';
-    notification.style.top = '20px';
-    notification.style.left = '50%';
-    notification.style.transform = 'translateX(-50%)';
-    notification.style.backgroundColor = '#ff5555';
-    notification.style.color = 'white';
-    notification.style.padding = '10px 15px';
-    notification.style.borderRadius = '4px';
-    notification.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.2)';
-    notification.style.zIndex = '10000';
-    notification.style.maxWidth = '80%';
-    notification.style.textAlign = 'center';
-    notification.style.fontSize = '14px';
-    
-    // Add close button
-    const closeBtn = document.createElement('span');
-    closeBtn.innerHTML = '&times;';
-    closeBtn.style.marginLeft = '10px';
-    closeBtn.style.cursor = 'pointer';
-    closeBtn.style.fontWeight = 'bold';
-    closeBtn.style.fontSize = '18px';
-    closeBtn.addEventListener('click', function() {
-        document.body.removeChild(notification);
-    });
-    
-    notification.appendChild(closeBtn);
-    
-    // Add to body
-    document.body.appendChild(notification);
-    
-    // Auto-remove after 8 seconds
-    setTimeout(() => {
-        if (document.body.contains(notification)) {
-            document.body.removeChild(notification);
-        }
-    }, 8000);
-}
-
-// Document ready function to ensure the fixes are applied after the map initializes
-document.addEventListener('DOMContentLoaded', function() {
-    console.log("Map-fixes.js loaded successfully");
-    // The main script already has a setTimeout for fixMapIssues function
-    // This is just a backup in case the main script's call fails
-    setTimeout(function() {
-        if (typeof map !== 'undefined' && !window.fixesApplied) {
-            console.log("Applying map fixes from map-fixes.js...");
-            fixMapIssues();
-            window.fixesApplied = true;
-        }
-    }, 8000);
-});jectSites}; margin-right: 8px;"></div>
-                <div class="legend-label">IFAW Project Sites</div>
-            </div>
-            <div class="legend-item">
-                <div style="width: 16px; height: 3px; border-top: 3px dashed ${CONFIG.colors.ifawPro
+    // Add to

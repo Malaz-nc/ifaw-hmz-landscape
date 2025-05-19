@@ -1,58 +1,12 @@
+// Configuration for the map
 const CONFIG = {
-    // Initial map center coordinates (Hwange area)
-    mapCenter: [-18.3, 26.5],
-    
-    // Initial zoom level
-    initialZoom: 7,
-    
-    // Min/max zoom levels
+    // Map settings
+    mapCenter: [-18.2, 27.5], // Latitude, Longitude
+    initialZoom: 8,
     minZoom: 6,
-    maxZoom: 16,
+    maxZoom: 18,
     
-    // Buffer radius for chiefs (in kilometers)
-    chiefBufferRadius: 15,
-    
-    // Colors for land types (matching the static map)
-    colors: {
-        communalLand: '#f7e5b7',        // Light beige
-        targetForestLand: '#1e7a1e',    // Dark green
-        largeScaleFarming: '#6c8a6c',   // Medium green
-        nationalPark: '#77ec77',        // Bright green
-        safariArea: '#b8b242',          // Olive green
-        smallScaleFarming: '#d1cb9e',   // Light tan
-        communityCa: '#f5d08a',         // Light orange
-        
-        // Other features
-        rivers: '#8acef5',              // Light blue
-        wildlifeCorridors: '#ff0000',   // Red
-        chiefBuffers: '#22ff22',        // Green for buffers
-        roads: {
-            category1: '#000000',       // Black
-            category2: '#555555',       // Dark gray
-            category3: '#999999'        // Light gray
-        }
-    },
-    
-    // GeoJSON file paths
-    geojsonPaths: {
-        bufferwards: 'data/bufferwards.geojson',
-        category1Road: 'data/category1_road.geojson',
-        category2Road: 'data/category2_road.geojson',
-        category3Road: 'data/category3_road.geojson',
-        chiefs: 'data/chiefs.geojson',
-        communityCa: 'data/Community_CA.geojson',
-        corridors: 'data/corridors.geojson',
-        hmzBoundary: 'data/HMZ_Boundary.geojson',
-        landscapeBoundary: 'data/Landscape_boundary.geojson',
-        landuse: 'data/Landuse.geojson',
-        landuse2: 'data/Landuse2.geojson',
-        pointsOfInterest: 'data/Places_of_interest.geojson',
-        rivers: 'data/rivers.geojson',
-        wards: 'data/wards.geojson',
-        waterSources: 'data/water_sources.geojson'
-    },
-    
-    // Basemap options
+    // Basemap layers
     basemaps: {
         OpenStreetMap: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
@@ -60,8 +14,55 @@ const CONFIG = {
         Satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
             attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
         }),
-        Topographic: L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        Topographic: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
         })
-    }
+    },
+    
+    // GeoJSON data paths - updated to match the file names in the screenshot
+    geojsonPaths: {
+        bufferwards: 'data/bufferwards.geojson',
+        communityCa: 'data/communityCa.geojson',
+        corridors: 'data/corridors.geojson',
+        districtboundaries: 'data/DistrictBoundaries.geojson',
+        landscapeboundary: 'data/landscapeboundary.geojson',
+        landuse: 'data/landuse.geojson',
+        matetsiunits: 'data/matetsiunits.geojson',
+        places: 'data/places.geojson',
+        projectsites: 'data/projectsites.geojson',
+        rivers: 'data/rivers.geojson',
+        roads: 'data/roads.geojson',
+        towns: 'data/towns.geojson',
+        watersources: 'data/watersources.geojson',
+        wildlife_corridors: 'data/wildlife_corridors.geojson'
+    },
+    
+    // Colors for map styling
+    colors: {
+        communalLand: '#f7e5b7',        // Light beige
+        targetForestLand: '#006400',    // Dark green for forest areas
+        forestArea: '#006400',          // Dark green for forest areas
+        largeScaleFarming: '#6c8a6c',   // Medium green
+        nationalPark: '#7eff7e',        // Bright green for National Parks
+        safariArea: '#b8b242',          // Olive green/yellow for Safari Areas
+        smallScaleFarming: '#d1cb9e',   // Light tan
+        communityCa: '#f5d08a',         // Light orange
+        
+        // Other features
+        rivers: '#0078ff',              // Bright blue for rivers
+        wildlifeCorridors: '#ff0000',   // Red for corridors
+        chiefBuffers: '#ff0000',        // Red for chief buffers
+        ifawOperatingWards: '#0077ff',  // Blue for IFAW operating wards
+        wards: '#000000',               // Black for ward boundaries
+        ifawProjectSites: '#ff9900',    // Orange for IFAW project sites
+        ifawProposedSites: '#9900cc',   // Purple for IFAW proposed sites
+        roads: {
+            category1: '#000000',       // Black
+            category2: '#555555',       // Dark gray
+            category3: '#999999'        // Light gray
+        }
+    },
+    
+    // Buffer radius in kilometers for chiefs
+    chiefBufferRadius: 15
 };

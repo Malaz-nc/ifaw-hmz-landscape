@@ -1,0 +1,752 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif;
+}
+
+html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header Styling */
+#header {
+    width: 100%;
+    background-color: white;
+    border-bottom: 1px solid #ddd;
+    z-index: 1000;
+    padding: 10px 0;
+    height: 60px;
+}
+
+.header-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px;
+    height: 100%;
+}
+
+.logo {
+    height: 40px;
+    max-width: 100px;
+}
+
+#header h1 {
+    font-size: 22px;
+    font-weight: bold;
+    color: #333;
+    text-align: center;
+    flex-grow: 1;
+}
+
+.north-arrow-container {
+    display: flex;
+    align-items: center;
+}
+
+.north-arrow {
+    height: 40px;
+    width: 40px;
+}
+
+/* Main Container */
+#main-container {
+    display: flex;
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: calc(100% - 60px - 30px); /* Adjust for header and footer heights */
+    overflow: hidden;
+}
+
+#map {
+    flex: 1;
+    z-index: 1;
+}
+
+/* Sidebar Styling - Matching the screenshot */
+#sidebar {
+    width: 250px;
+    height: 100%;
+    background-color: white;
+    box-shadow: -2px 0 5px rgba(0, 0, 0, 0.1);
+    z-index: 2;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+}
+
+.sidebar-title {
+    padding: 10px 15px;
+    background-color: #3373b4;
+    color: white;
+    margin: 0;
+    font-size: 18px;
+}
+
+.control-section {
+    padding: 10px 15px;
+    border-bottom: 1px solid #eee;
+}
+
+.control-section h3 {
+    font-size: 16px;
+    margin-bottom: 8px;
+    color: #3373b4;
+    font-weight: bold;
+}
+
+.control-items {
+    margin-left: 5px;
+}
+
+.control-items label {
+    display: block;
+    margin: 6px 0;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.sidebar-footer {
+    padding: 10px 15px;
+    background-color: #f8f8f8;
+    font-size: 12px;
+    color: #666;
+    text-align: center;
+    margin-top: auto;
+}
+
+/* Info Panel Styling */
+#info-panel {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 300px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #3373b4;
+    color: white;
+}
+
+.info-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+#info-content {
+    padding: 15px;
+    overflow-y: auto;
+    max-height: 450px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Footer Styling */
+#footer {
+    height: 30px;
+    background-color: #f8f8f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #ddd;
+}
+
+/* Legend Styling */
+#legend-content {
+    margin-top: 5px;
+}
+
+.legend-section {
+    margin-bottom: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border: 1px solid #ccc;
+}
+
+.legend-line {
+    width: 16px;
+    height: 2px;
+    margin-right: 8px;
+}
+
+.legend-point {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.legend-label {
+    font-size: 12px;
+}
+
+/* Analysis Section Styling */
+#analysis-content {
+    background-color: #f8f8f8;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.analysis-item {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+/* Custom Popup Styling */
+.leaflet-popup-content {
+    max-width: 300px;
+}
+
+.custom-popup h3 {
+    color: #3373b4;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.custom-popup p {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+.custom-popup strong {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Chief Buffer Styling */
+.chief-buffer {
+    fill-opacity: 0.2;
+    stroke-width: 2;
+}
+
+/* Wildlife Corridor Styling */
+.wildlife-corridor {
+    stroke: #ff0000;
+    stroke-width: 3;
+}
+
+/* Animation for Corridor Arrows */
+@keyframes flow {
+    0% {
+        stroke-dashoffset: 24;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.animated-arrow {
+    animation: flow 2s linear infinite;
+    stroke-dasharray: 12, 12;
+}
+
+/* Form Controls Styling */
+input[type="checkbox"], 
+input[type="radio"] {
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* Error Notification */
+.error-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ff5555;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    font-size: 14px;
+    max-width: 80%;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        padding: 5px;
+    }
+    
+    #header h1 {
+        font-size: 16px;
+        margin: 5px 0;
+    }
+    
+    #sidebar {
+        position: absolute;
+        transform: translateX(-100%);
+        width: 80%;
+        max-width: 270px;
+    }
+    
+    #sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .sidebar-toggle {
+        display: block;
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        z-index: 1000;
+    }
+    
+    #info-panel {
+        width: 90%;
+        left: 5%;
+        right: 5%;
+    }
+}
+
+/* Info Panel Styling */
+#info-panel {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 300px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #3373b4;
+    color: white;
+}
+
+.info-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+#info-content {
+    padding: 15px;
+    overflow-y: auto;
+    max-height: 450px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Footer Styling */
+#footer {
+    height: 30px;
+    background-color: #f8f8f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #ddd;
+}
+
+/* Legend Styling */
+#legend-content {
+    margin-top: 5px;
+}
+
+.legend-section {
+    margin-bottom: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.legend-color {
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    border: 1px solid #ccc;
+}
+
+.legend-line {
+    width: 16px;
+    height: 2px;
+    margin-right: 8px;
+}
+
+.legend-point {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.legend-label {
+    font-size: 12px;
+}
+
+/* Analysis Section Styling */
+#analysis-content {
+    background-color: #f8f8f8;
+    padding: 8px;
+    border-radius: 4px;
+}
+
+.analysis-item {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+/* Custom Popup Styling */
+.leaflet-popup-content {
+    max-width: 300px;
+}
+
+.custom-popup h3 {
+    color: #3373b4;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.custom-popup p {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+.custom-popup strong {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Chief Buffer Styling */
+.chief-buffer {
+    fill-opacity: 0.2;
+    stroke-width: 2;
+}
+
+/* Wildlife Corridor Styling */
+.wildlife-corridor {
+    stroke: #ff0000;
+    stroke-width: 3;
+}
+
+/* Animation for Corridor Arrows */
+@keyframes flow {
+    0% {
+        stroke-dashoffset: 24;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.animated-arrow {
+    animation: flow 2s linear infinite;
+    stroke-dasharray: 12, 12;
+}
+
+/* Form Controls Styling */
+input[type="checkbox"], 
+input[type="radio"] {
+    margin-right: 6px;
+    vertical-align: middle;
+}
+
+/* Error Notification */
+.error-notification {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: #ff5555;
+    color: white;
+    padding: 10px 15px;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 10000;
+    font-size: 14px;
+    max-width: 80%;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .header-content {
+        flex-direction: column;
+        padding: 5px;
+    }
+    
+    #header h1 {
+        font-size: 16px;
+        margin: 5px 0;
+    }
+    
+    #sidebar {
+        position: absolute;
+        transform: translateX(-100%);
+        width: 80%;
+        max-width: 270px;
+    }
+    
+    #sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .sidebar-toggle {
+        display: block;
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        z-index: 1000;
+    }
+    
+    #info-panel {
+        width: 90%;
+        left: 5%;
+        right: 5%;
+    }
+}
+
+/* Info Panel Styling */
+#info-panel {
+    position: absolute;
+    top: 80px;
+    right: 20px;
+    width: 300px;
+    background-color: white;
+    border-radius: 4px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+    z-index: 1000;
+    overflow: hidden;
+    max-height: 500px;
+    display: none;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    background-color: #0077b6;
+    color: white;
+}
+
+.info-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 20px;
+    cursor: pointer;
+}
+
+#info-content {
+    padding: 15px;
+    overflow-y: auto;
+    max-height: 450px;
+}
+
+.hidden {
+    display: none;
+}
+
+/* Footer Styling */
+#footer {
+    height: 30px;
+    background-color: #f8f8f8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    color: #666;
+    border-top: 1px solid #ddd;
+}
+
+/* Legend Styling */
+#legend-content {
+    margin-top: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin: 8px 0;
+}
+
+.legend-color {
+    width: 20px;
+    height: 20px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+}
+
+.legend-line {
+    width: 20px;
+    height: 3px;
+    margin-right: 10px;
+}
+
+.legend-point {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.legend-label {
+    font-size: 13px;
+}
+
+/* Analysis Section Styling */
+#analysis-content {
+    background-color: #f8f8f8;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+#analysis-content p {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+/* Custom Popup Styling */
+.leaflet-popup-content {
+    max-width: 300px;
+}
+
+.custom-popup h3 {
+    color: #0077b6;
+    margin-bottom: 8px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.custom-popup p {
+    margin: 5px 0;
+    font-size: 13px;
+}
+
+.custom-popup strong {
+    font-weight: bold;
+    margin-right: 5px;
+}
+
+/* Chief Buffer Styling */
+.chief-buffer {
+    fill-opacity: 0.2;
+    stroke-width: 2;
+}
+
+/* Wildlife Corridor Styling */
+.wildlife-corridor {
+    stroke: #ff0000;
+    stroke-width: 3;
+}
+
+/* Animation for Corridor Arrows */
+@keyframes flow {
+    0% {
+        stroke-dashoffset: 24;
+    }
+    100% {
+        stroke-dashoffset: 0;
+    }
+}
+
+.animated-arrow {
+    animation: flow 2s linear infinite;
+    stroke-dasharray: 12, 12;
+}
+
+/* Responsive Design */
+@media screen and (max-width: 768px) {
+    .title-container {
+        flex-direction: column;
+        padding: 5px;
+    }
+    
+    #header h1 {
+        font-size: 18px;
+        margin: 5px 0;
+    }
+    
+    #sidebar {
+        position: absolute;
+        transform: translateX(-100%);
+        width: 80%;
+        max-width: 300px;
+    }
+    
+    #sidebar.active {
+        transform: translateX(0);
+    }
+    
+    .sidebar-toggle {
+        display: block;
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        z-index: 1000;
+    }
+    
+    #info-panel {
+        width: 90%;
+        left: 5%;
+        right: 5%;
+    }
+}

@@ -1,3 +1,50 @@
+// Global Configuration
+const CONFIG = {
+    mapCenter: [-18.5, 26.5], // Default center coordinates
+    initialZoom: 10,
+    minZoom: 8,
+    maxZoom: 16,
+    basemaps: {
+        OpenStreetMap: L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }),
+        Satellite: L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        })
+    },
+    geojsonPaths: {
+        landscapeboundary: 'data/landscapeboundary.geojson',
+        landuse: 'data/landuse.geojson',
+        districtboundaries: 'data/Districtboundaries.geojson',
+        bufferwards: 'data/bufferwards.geojson',
+        communityCa: 'data/communityCA.geojson',
+        wildlife_corridors: 'data/corridors.geojson',
+        corridors: 'data/corridors.geojson',
+        roads: 'data/roads.geojson',
+        rivers: 'data/rivers.geojson',
+        watersources: 'data/watersources.geojson',
+        places: 'data/places.geojson',
+        towns: 'data/towns.geojson',
+        projectsites: 'data/projectsites.geojson',
+        matetsiunits: 'data/matetsiunits.geojson'
+    },
+    colors: {
+        communalLand: '#FFD700',
+        targetForestLand: '#228B22',
+        largeScaleFarming: '#CD853F',
+        nationalPark: '#006400',
+        safariArea: '#8B4513',
+        smallScaleFarming: '#D2B48C',
+        communityCa: '#FFA500',
+        wildlifeCorridors: '#FF00FF',
+        rivers: '#1E90FF',
+        roads: {
+            category1: '#8B0000'
+        },
+        ifawProjectSites: '#FF4500'
+    }
+};
+
 // Global variables
 let map;
 let allLayers = {};
@@ -31,7 +78,7 @@ function initializeMap() {
             minZoom: CONFIG.minZoom,
             maxZoom: CONFIG.maxZoom,
             fullscreenControl: true,
-            attributionControl: false // We'll add attribution in the footer
+            attributionControl: false
         });
 
         console.log("Map created successfully");

@@ -78,7 +78,7 @@ function initializeMap() {
         loadDistrictBoundariesLayer(window.map),
         loadRiversLayer(window.map),
         loadRoadsLayer(window.map),
-        loadTownsLayer(window.map),
+        // loadTownsLayer(window.map), // Removed towns layer
         loadPlacesLayer(window.map)
     ])
     .then(() => {
@@ -348,7 +348,7 @@ function loadRiversLayer(map) {
                     style: {
                         color: '#87CEFA', // Light blue color
                         weight: 1.5,
-                        opacity: 0.4 // 40% opacity
+                        opacity: 0.6 // Changed from 0.4 to 0.6 (60%)
                     },
                     onEachFeature: function(feature, layer) {
                         // Only add popup, no mouseover effects
@@ -404,7 +404,7 @@ function loadRoadsLayer(map) {
                     style: {
                         color: '#8B4513', // Brown color
                         weight: 1.5,
-                        opacity: 0.4 // 40% opacity
+                        opacity: 0.6 // Changed from 0.4 to 0.6 (60%)
                     },
                     onEachFeature: function(feature, layer) {
                         // Only add popup, no mouseover effects
@@ -442,61 +442,6 @@ function loadRoadsLayer(map) {
     });
 }
 
-// Function to load the Towns layer
-function loadTownsLayer(map) {
-    return new Promise((resolve, reject) => {
-        fetch('data/towns.geojson')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                debug("Towns data loaded successfully");
-                
-                // Add GeoJSON to map with point markers
-                allLayers.towns = L.geoJSON(data, {
-                    pointToLayer: function(feature, latlng) {
-                        return L.circleMarker(latlng, {
-                            radius: 6,
-                            fillColor: "#FF0000",
-                            color: "#000",
-                            weight: 1,
-                            opacity: 1,
-                            fillOpacity: 0.8
-                        });
-                    },
-                    onEachFeature: function(feature, layer) {
-                        // Only add popup, no mouseover effects
-                        if (feature.properties) {
-                            let popupContent = '<div class="popup-content">';
-                            
-                            for (const prop in feature.properties) {
-                                const value = feature.properties[prop];
-                                if (value !== null && value !== undefined && value !== '') {
-                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
-                                }
-                            }
-                            
-                            popupContent += '</div>';
-                            layer.bindPopup(popupContent);
-                        }
-                    }
-                });
-                
-                // Add to overlay control but don't add to map by default
-                overlayLayers["Towns"] = allLayers.towns;
-                
-                resolve();
-            })
-            .catch(error => {
-                console.error("Error loading Towns data:", error);
-                resolve();
-            });
-    });
-}
-
 // Function to load the Places layer
 function loadPlacesLayer(map) {
     return new Promise((resolve, reject) => {
@@ -514,7 +459,7 @@ function loadPlacesLayer(map) {
                 allLayers.places = L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
                         return L.circleMarker(latlng, {
-                            radius: 3, // Smaller circles (reduced from 5)
+                            radius: 1, // Changed from 3 to 1
                             fillColor: "#FFA500",
                             color: "#000",
                             weight: 1,
@@ -661,7 +606,7 @@ function styleMatetsiUnits(feature) {
     };
 }
 
-// Function to add interactivity to each feature
+// Function to add interactivity to each feature - removed hover effects
 function onEachFeature(feature, layer) {
     // Create a popup with feature information
     if (feature.properties) {

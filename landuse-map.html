@@ -29,8 +29,8 @@
             margin-bottom: 15px;
         }
         
-        /* Map container */
-        #map {
+        /* Map container - KEEP THE ID AS landuse-map to match the JS */
+        #landuse-map {
             height: 80vh;
             width: 100%;
             border: 1px solid #ccc;
@@ -136,10 +136,15 @@
             background-color: #FF9800; /* Orange */
         }
         
-        .project-sites {
-            border: 2px solid #FF5722;
+        .project-site-box {
+            width: 12px;
+            height: 12px;
+            display: inline-block;
+            margin-right: 5px;
             background-color: transparent;
+            border: 2px solid #FF5722;
             transform: rotate(45deg);
+            vertical-align: middle;
         }
         
         #map-info {
@@ -211,7 +216,7 @@
     <div class="container">
         <h1>Hwange-Matetsi-Zambezi Area - Land Use Map</h1>
         <div id="loading-indicator">Loading map data... Please wait.</div>
-        <div id="map"></div>
+        <div id="landuse-map"></div>
         <div id="map-info">
             <p>This map displays land use categories and features in the Hwange-Matetsi-Zambezi area with the following color scheme:</p>
             <ul>
@@ -223,13 +228,13 @@
                 <li><span class="color-box buffer-wards"></span> Buffer Wards</li>
                 <li><span class="color-box corridors"></span> Corridors</li>
                 <li><span class="color-box wildlife-corridors"></span> Wildlife Corridors</li>
-                <li><span class="color-box project-sites"></span> Project Sites</li>
+                <li><span class="project-site-box"></span> Project Sites</li>
             </ul>
             <p>Click on any feature for more information. Use the layer control in the top right to toggle different map layers.</p>
         </div>
     </div>
     
-    <!-- Custom JavaScript -->
+    <!-- Custom JavaScript - Load external map.js file -->
     <script src="map.js"></script>
 </body>
 </html>

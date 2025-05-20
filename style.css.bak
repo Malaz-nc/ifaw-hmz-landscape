@@ -1,0 +1,152 @@
+/* Main map container */
+#map {
+    height: 85vh;
+    width: 100%;
+    border: 1px solid #ccc;
+    position: relative;
+}
+
+body {
+    padding: 0;
+    margin: 0;
+    font-family: Arial, Helvetica, sans-serif;
+}
+
+.container {
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+h1 {
+    color: #333;
+    margin-bottom: 15px;
+}
+
+/* Loading indicator */
+#loading-indicator {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: bold;
+    color: #666;
+    display: block; /* Will be hidden via JavaScript once map loads */
+}
+
+/* Legend styles */
+.info {
+    padding: 6px 8px;
+    font: 14px/16px Arial, Helvetica, sans-serif;
+    background: white;
+    background: rgba(255, 255, 255, 0.8);
+    box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+}
+
+.info h4 {
+    margin: 0 0 5px;
+    color: #333;
+}
+
+.legend {
+    line-height: 18px;
+    color: #555;
+}
+
+.legend i {
+    width: 18px;
+    height: 18px;
+    float: left;
+    margin-right: 8px;
+    opacity: 0.7;
+}
+
+/* Popup styles */
+.popup-content {
+    padding: 10px;
+    font-size: 14px;
+}
+
+.popup-content strong {
+    color: #333;
+}
+
+/* Error message */
+.error-message {
+    color: red;
+    text-align: center;
+    padding: 20px;
+    font-weight: bold;
+}
+
+/* Land use colors */
+.color-box {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
+.national-park {
+    background-color: #90EE90; /* Light green */
+}
+
+.forest {
+    background-color: #006400; /* Dark green */
+}
+
+.safari {
+    background-color: #F5DEB3; /* Beige */
+}
+
+.community {
+    background-color: #8B4513; /* Dark brown */
+}
+
+.resettlement {
+    background-color: #A52A2A; /* Brown */
+}
+
+#map-info {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+}
+
+#map-info ul {
+    list-style-type: none;
+    padding-left: 10px;
+}
+
+#map-info li {
+    margin-bottom: 5px;
+}
+
+/* Layer control enhancements */
+.leaflet-control-layers {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Layer control panel width */
+.leaflet-control-layers-expanded {
+    padding: 10px;
+    width: 200px;
+}
+
+/* Make layer control checkboxes larger and easier to click */
+.leaflet-control-layers-selector {
+    margin-right: 5px;
+    transform: scale(1.2);
+}
+
+/* Improve layer control labels */
+.leaflet-control-layers label {
+    margin-bottom: 5px;
+    font-weight: normal;
+    font-size: 14px;
+}

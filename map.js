@@ -51,11 +51,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Initialize the map and load layers
-// Here's the complete initialization function where the issue appears to be
 function initializeMap() {
     debug("Creating map...");
     
     // Create the map with a global variable so we can access it elsewhere
+    // FIXED: Changed 'map' to 'landuse-map' to match the HTML element ID
     window.map = L.map('landuse-map', {
         center: [-18.86, 26.31], // Centered more on Hwange National Park
         zoom: 9, // Closer zoom to focus on the area
@@ -284,6 +284,105 @@ function loadLandscapeBoundaryLayer(map) {
                             }
                             
                             popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                            
+                            // Add label if name available
+                            let name = feature.properties.name || feature.properties.Name || 
+                                      feature.properties.NAME || feature.properties.Corridor || '';
+                            if (name) {
+                                layer.bindTooltip(name, {
+                                    permanent: true,
+                                    direction: 'center',
+                                    className: 'landuse-label'
+                                });
+                            }
+                        }
+                        
+                        // Add click handler for zooming
+                        layer.on({
+                            click: zoomToFeature
+                        });
+                    }
+                });
+                
+                // Add to overlay control but don't add to map by default
+                overlayLayers["Wildlife Corridors"] = allLayers.wildlifeCorridors;
+                
+                resolve();
+            })
+            .catch(error => {
+                console.error("Error loading Wildlife Corridors data:", error);
+                resolve();
+            });
+    });
+}
+
+// Function to load the Watersources layer
+function loadWatersourcesLayer(map) {
+    return new Promise((resolve, reject) => {
+        fetch('data/watersources.geojson')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                debug("Watersources data loaded successfully");
+                
+                // Add GeoJSON to map with point markers
+                allLayers.watersources = L.geoJSON(data, {
+                    pointToLayer: function(feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 3,
+                            fillColor: "#2196F3", // Blue for water
+                            color: "#0D47A1",
+                            weight: 1,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        });
+                    },
+                    onEachFeature: function(feature, layer) {
+                        // Add popup with properties
+                        if (feature.properties) {
+                            let popupContent = '<div class="popup-content">';
+                            
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+                            
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                            
+                            // Add label if name available
+                            let name = feature.properties.name || feature.properties.Name || 
+                                      feature.properties.NAME || feature.properties.type || '';
+                            if (name) {
+                                layer.bindTooltip(name, {
+                                    permanent: false, // Only show on hover
+                                    direction: 'right',
+                                    offset: [10, 0],
+                                    className: 'place-label'
+                                });
+                            }
+                        }
+                    }
+                });
+                
+                // Add to overlay control but don't add to map by default
+                overlayLayers["Water Sources"] = allLayers.watersources;
+                
+                resolve();
+            })
+            .catch(error => {
+                console.error("Error loading Watersources data:", error);
+                resolve();
+            });
+    });
+}
                             layer.bindPopup(popupContent);
                             
                             // Add label if name available

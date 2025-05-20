@@ -18,6 +18,31 @@ const overlayLayers = {}; // For layer control
 // Initialize the map when document is ready
 document.addEventListener('DOMContentLoaded', function() {
     debug("Document ready, initializing map...");
+    
+    // Add CSS for labels
+    const style = document.createElement('style');
+    style.innerHTML = `
+        .landuse-label {
+            background: none;
+            border: none;
+            box-shadow: none;
+            font-size: 10px;
+            font-weight: bold;
+            color: #333;
+            text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+        }
+        .place-label {
+            background: none;
+            border: none;
+            box-shadow: none;
+            font-size: 10px;
+            font-weight: bold;
+            color: #000;
+            text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+        }
+    `;
+    document.head.appendChild(style);
+    
     initializeMap();
 });
 
@@ -231,7 +256,7 @@ function loadLandscapeBoundaryLayer(map) {
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.landscapeBoundary = L.geoJSON(data, {
                     style: {
-                        color: '#000',
+                        color: '#FF0000', // Changed to red color
                         weight: 4, // Thicker line (increased from 2)
                         opacity: 1,
                         fillOpacity: 0
@@ -459,7 +484,7 @@ function loadPlacesLayer(map) {
                 allLayers.places = L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
                         return L.circleMarker(latlng, {
-                            radius: 1, // Changed from 3 to 1
+                            radius: 2, // Changed from 1 to 2
                             fillColor: "#FFA500",
                             color: "#000",
                             weight: 1,
@@ -481,6 +506,18 @@ function loadPlacesLayer(map) {
                             
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
+                            
+                            // Add label for places
+                            let name = feature.properties.name || feature.properties.Name || 
+                                      feature.properties.NAME || feature.properties.title || 
+                                      feature.properties.TITLE || '';
+                            if (name) {
+                                layer.bindTooltip(name, {
+                                    permanent: true,
+                                    direction: 'right',
+                                    className: 'place-label'
+                                });
+                            }
                         }
                     }
                 });
@@ -648,6 +685,15 @@ function onEachFeature(feature, layer) {
         
         // Bind popup to layer
         layer.bindPopup(popupContent);
+        
+        // Add label for land use
+        if (name) {
+            layer.bindTooltip(name, {
+                permanent: true,
+                direction: 'center',
+                className: 'landuse-label'
+            });
+        }
     }
     
     // Only add click handler for zooming, no mouseover effects

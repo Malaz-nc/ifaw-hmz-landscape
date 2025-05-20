@@ -103,7 +103,11 @@ h1 {
 }
 
 .community {
-    background-color: #D2B48C; /* Tan/Brown */
+    background-color: #8B4513; /* Dark brown */
+}
+
+.resettlement {
+    background-color: #A52A2A; /* Brown */
 }
 
 #map-info {
@@ -120,4 +124,29 @@ h1 {
 
 #map-info li {
     margin-bottom: 5px;
+}
+
+/* Layer control enhancements */
+.leaflet-control-layers {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+/* Layer control panel width */
+.leaflet-control-layers-expanded {
+    padding: 10px;
+    width: 200px;
+}
+
+/* Make layer control checkboxes larger and easier to click */
+.leaflet-control-layers-selector {
+    margin-right: 5px;
+    transform: scale(1.2);
+}
+
+/* Improve layer control labels */
+.leaflet-control-layers label {
+    margin-bottom: 5px;
+    font-weight: normal;
+    font-size: 14px;
 }

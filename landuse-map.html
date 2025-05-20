@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hwange-Matetsi-Zambezi Land Use Map</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" 
+          integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" 
+          crossorigin=""/>
+    
+    <!-- Custom Styles (Internal to avoid CSS conflicts) -->
+    <style>
+        body {
+            padding: 0;
+            margin: 0;
+            font-family: Arial, Helvetica, sans-serif;
+        }
+        
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        /* Map container */
+        #landuse-map {
+            height: 80vh;
+            width: 100%;
+            border: 1px solid #ccc;
+            position: relative;
+        }
+        
+        /* Loading indicator */
+        #loading-indicator {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #666;
+        }
+        
+        /* Info box styles */
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        
+        .info h4 {
+            margin: 0 0 5px;
+            color: #333;
+        }
+        
+        .legend {
+            line-height: 18px;
+            color: #555;
+        }
+        
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        
+        /* Popup styles */
+        .popup-content {
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .popup-content strong {
+            color: #333;
+        }
+        
+        /* Error message */
+        .error-message {
+            color: red;
+            text-align: center;
+            padding: 20px;
+            font-weight: bold;
+        }
+        
+        /* Land use colors */
+        .color-box {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        
+        .national-park {
+            background-color: #90EE90; /* Light green */
+        }
+        
+        .forest {
+            background-color: #006400; /* Dark green */
+        }
+        
+        .safari {
+            background-color: #F5DEB3; /* Beige */
+        }
+        
+        .community {
+            background-color: #D2B48C; /* Tan/Brown */
+        }
+        
+        #map-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+        
+        #map-info ul {
+            list-style-type: none;
+            padding-left: 10px;
+        }
+        
+        #map-info li {
+            margin-bottom: 5px;
+        }
+    </style>
+    
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Hwange-Matetsi-Zambezi Area - Land Use Map</h1>
+        <div id="loading-indicator">Loading map data... Please wait.</div>
+        <div id="landuse-map"></div>
+        <div id="map-info">
+            <p>This map displays land use categories in the Hwange-Matetsi-Zambezi area with the following color scheme:</p>
+            <ul>
+                <li><span class="color-box national-park"></span> National Parks</li>
+                <li><span class="color-box forest"></span> Forest/State Forest</li>
+                <li><span class="color-box safari"></span> Safari Areas</li>
+                <li><span class="color-box community"></span> Community Conservation Areas</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Custom JavaScript -->
+    <script>
+        // Simple debug function to log messages to console
+        function debug(message) {
+            console.log(`HMZ-LandUse: ${message}`);
+        }
+        
+        // Set up configuration 
+        const CONFIG = {
+            mapCenter: [-18.5, 26], // Hwange-Matetsi-Zambezi area
+            defaultZoom: 8,
+            maxZoom: 18,
+            minZoom: 5
+        };
+        
+        // Initialize the map when document is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            debug("Document ready, initializing map...");
+            initializeLandUseMap();
+        });
+        
+        // Initialize the map and load layers
+        function initializeLandUseMap() {
+            debug("Creating map...");
+            
+            // Create the map
+            const map = L.map('landuse-map', {
+                center: CONFIG.mapCenter,
+                zoom: CONFIG.defaultZoom,
+                maxZoom: CONFIG.maxZoom,
+                minZoom: CONFIG.minZoom
+            });
+            debug("Map created successfully");
+            
+            // Add base layers
+            debug("Setting up basemap layers...");
+            const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+            }).addTo(map);
+            
+            const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            });
+            
+            const baseLayers = {
+                "OpenStreetMap": osm,
+                "Satellite": satellite
+            };
+            
+            // Add layer controls
+            L.control.layers(baseLayers, null, {
+                collapsed: false
+            }).addTo(map);
+            
+            // Add scale
+            L.control.scale({
+                imperial: false,
+                metric: true,
+                position: 'bottomleft'
+            }).addTo(map);
+            
+            // Load GeoJSON land use data
+            debug("Loading GeoJSON landuse data...");
+            loadLandUseData(map);
+        }
+        
+        // Function to load the land use data
+        function loadLandUseData(map) {
+            fetch('data/landuse.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Land use data loaded successfully");
+                    
+                    // Process and add land use data to map
+                    addLandUseLayer(map, data);
+                    
+                    // Create legend
+                    createLegend(map);
+                    
+                    // Hide loading indicator
+                    document.getElementById('loading-indicator').style.display = 'none';
+                })
+                .catch(error => {
+                    console.error("Error loading land use data:", error);
+                    document.getElementById('loading-indicator').innerHTML = 
+                        `Error loading landuse.geojson: ${error.message}. Check console for details.`;
+                    document.getElementById('loading-indicator').style.color = 'red';
+                });
+        }
+        
+        // Function to add land use layer to map
+        function addLandUseLayer(map, data) {
+            // Add GeoJSON with styling
+            const landUseLayer = L.geoJSON(data, {
+                style: styleLandUse,
+                onEachFeature: onEachFeature
+            }).addTo(map);
+            
+            // Fit the map to the bounds of the land use layer
+            map.fitBounds(landUseLayer.getBounds());
+            
+            // Store layer for later use
+            window.landUseLayer = landUseLayer;
+        }
+        
+        // Function to determine color based on the designation
+        function getColor(designation) {
+            // Default color if designation doesn't match any case
+            let color = '#AAAAAA';
+            
+            // Convert designation to lowercase for case-insensitive comparison
+            const desig = designation ? designation.toLowerCase() : '';
+            
+            // Assign colors based on designation types
+            if (desig.includes('national park')) {
+                color = '#90EE90'; // Light green for National Parks
+            } else if (desig.includes('forest') || desig.includes('state forest')) {
+                color = '#006400'; // Dark green for Forest areas
+            } else if (desig.includes('safari') || desig.includes('game reserve')) {
+                color = '#F5DEB3'; // Beige for Safari areas
+            } else if (desig.includes('community') || desig.includes('conservancy')) {
+                color = '#D2B48C'; // Tan/Brown for Community Conservation Areas
+            }
+            
+            return color;
+        }
+        
+        // Style function for GeoJSON features
+        function styleLandUse(feature) {
+            return {
+                fillColor: getColor(feature.properties.desig),
+                weight: 1,
+                opacity: 1,
+                color: '#666',
+                dashArray: '',
+                fillOpacity: 0.7
+            };
+        }
+        
+        // Function to add interactivity to each feature
+        function onEachFeature(feature, layer) {
+            // Create a popup with feature information
+            if (feature.properties) {
+                let popupContent = '<div class="popup-content">';
+                
+                // Add designation if available
+                if (feature.properties.desig) {
+                    popupContent += `<strong>Designation:</strong> ${feature.properties.desig}<br>`;
+                }
+                
+                // Add name if available
+                if (feature.properties.name) {
+                    popupContent += `<strong>Name:</strong> ${feature.properties.name}<br>`;
+                }
+                
+                // Add any other relevant properties
+                popupContent += '</div>';
+                
+                layer.bindPopup(popupContent);
+            }
+            
+            // Add hover effects
+            layer.on({
+                mouseover: highlightFeature,
+                mouseout: resetHighlight
+            });
+        }
+        
+        // Highlight feature function
+        function highlightFeature(e) {
+            const layer = e.target;
+            
+            layer.setStyle({
+                weight: 3,
+                color: '#666',
+                dashArray: '',
+                fillOpacity: 0.9
+            });
+            
+            if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                layer.bringToFront();
+            }
+        }
+        
+        // Reset highlight function
+        function resetHighlight(e) {
+            if (window.landUseLayer) {
+                window.landUseLayer.resetStyle(e.target);
+            }
+        }
+        
+        // Create a legend for the map
+        function createLegend(map) {
+            const legend = L.control({ position: 'bottomright' });
+            
+            legend.onAdd = function() {
+                const div = L.DomUtil.create('div', 'info legend');
+                const categories = [
+                    { name: 'National Park', value: 'national park' },
+                    { name: 'Forest/State Forest', value: 'forest' },
+                    { name: 'Safari Area', value: 'safari' },
+                    { name: 'Community Conservation', value: 'community' },
+                    { name: 'Other', value: '' }
+                ];
+                
+                div.innerHTML = '<h4>Land Designation</h4>';
+                
+                // Loop through our categories and generate a label with a colored square for each
+                for (let i = 0; i < categories.length; i++) {
+                    div.innerHTML +=
+                        '<i style="background:' + getColor(categories[i].value) + '"></i> ' +
+                        categories[i].name + '<br>';
+                }
+                
+                return div;
+            };
+            
+            legend.addTo(map);
+        }
+    </script>
+</body>
+</html>

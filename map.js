@@ -404,16 +404,8 @@ function loadRiversLayer(map) {
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
                             
-                            // Add river name as label if available
-                            let name = feature.properties.name || feature.properties.Name || 
-                                    feature.properties.NAME || '';
-                            if (name) {
-                                layer.bindTooltip(name, {
-                                    permanent: true,
-                                    direction: 'center',
-                                    className: 'place-label'
-                                });
-                            }
+                            // REMOVED: River name labels are no longer displayed by default
+                            // Only display labels on demand when layer is turned on manually
                         }
                         
                         // Only add click handler for zooming
@@ -508,9 +500,9 @@ function loadPlacesLayer(map) {
                 allLayers.places = L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
                         return L.circleMarker(latlng, {
-                            radius: 4, // Increased from 2 to 4 to make more visible
-                            fillColor: "#FFA500",
-                            color: "#000",
+                            radius: 2, // Reduced from 4 to 2 as requested
+                            fillColor: "#000", // Changed to black as requested
+                            color: "#000", // Black border
                             weight: 1,
                             opacity: 1,
                             fillOpacity: 0.8
@@ -531,13 +523,15 @@ function loadPlacesLayer(map) {
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
                             
-                            // Add label for places
-                            let name = feature.properties.name || feature.properties.Name || 
-                                      feature.properties.NAME || feature.properties.title || 
-                                      feature.properties.TITLE || '';
+                            // Look specifically for FULL_NAME property as requested
+                            let name = feature.properties.FULL_NAME || feature.properties.full_name || 
+                                    feature.properties.name || feature.properties.Name || 
+                                    feature.properties.NAME || feature.properties.title || 
+                                    feature.properties.TITLE || '';
+                                    
                             if (name) {
                                 layer.bindTooltip(name, {
-                                    permanent: true,
+                                    permanent: true, // Make labels permanent by default
                                     direction: 'right',
                                     offset: [10, 0], // Add offset to prevent overlap with marker
                                     className: 'place-label'
@@ -545,9 +539,9 @@ function loadPlacesLayer(map) {
                             }
                         }
                     }
-                });
+                }).addTo(map); // Add to map by default
                 
-                // Add to overlay control but don't add to map by default
+                // Add to overlay control
                 overlayLayers["Places"] = allLayers.places;
                 
                 resolve();

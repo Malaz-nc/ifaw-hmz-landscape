@@ -51,11 +51,11 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // Initialize the map and load layers
+// Here's the complete initialization function where the issue appears to be
 function initializeMap() {
     debug("Creating map...");
     
     // Create the map with a global variable so we can access it elsewhere
-    // FIXED: Changed 'map' to 'landuse-map' to match the HTML element ID
     window.map = L.map('landuse-map', {
         center: [-18.86, 26.31], // Centered more on Hwange National Park
         zoom: 9, // Closer zoom to focus on the area

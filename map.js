@@ -31,6 +31,7 @@ document.addEventListener('DOMContentLoaded', function() {
             color: #333 !important;
             text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
             pointer-events: none !important;
+            z-index: 1000 !important;
         }
         .place-label {
             background: none !important;
@@ -41,6 +42,7 @@ document.addEventListener('DOMContentLoaded', function() {
             color: #000 !important;
             text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
             pointer-events: none !important;
+            z-index: 1000 !important;
         }
     `;
     document.head.appendChild(style);
@@ -53,7 +55,8 @@ function initializeMap() {
     debug("Creating map...");
     
     // Create the map with a global variable so we can access it elsewhere
-    window.map = L.map('map', {
+    // FIXED: Changed 'map' to 'landuse-map' to match the HTML element ID
+    window.map = L.map('landuse-map', {
         center: [-18.86, 26.31], // Centered more on Hwange National Park
         zoom: 9, // Closer zoom to focus on the area
         maxZoom: CONFIG.maxZoom,
@@ -271,6 +274,48 @@ function loadLandscapeBoundaryLayer(map) {
                         // Only add popup, no mouseover effects
                         if (feature.properties) {
                             let popupContent = '<div class="popup-content">';
+                            
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+                            
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                            
+                            // Add label if name available
+                            let name = feature.properties.name || feature.properties.Name || 
+                                      feature.properties.NAME || feature.properties.Corridor || '';
+                            if (name) {
+                                layer.bindTooltip(name, {
+                                    permanent: true,
+                                    direction: 'center',
+                                    className: 'landuse-label'
+                                });
+                            }
+                        }
+                        
+                        // Add click handler for zooming
+                        layer.on({
+                            click: zoomToFeature
+                        });
+                    }
+                });
+                
+                // Add to overlay control but don't add to map by default
+                overlayLayers["Wildlife Corridors"] = allLayers.wildlifeCorridors;
+                
+                resolve();
+            })
+            .catch(error => {
+                console.error("Error loading Wildlife Corridors data:", error);
+                resolve();
+            });
+    });
+}<div class="popup-content">';
                             
                             for (const prop in feature.properties) {
                                 const value = feature.properties[prop];
@@ -668,45 +713,6 @@ function loadBufferwardsLayer(map) {
                             
                             // Add label if name available
                             let name = feature.properties.name || feature.properties.Name || 
-                                      feature.properties.NAME || feature.properties.Corridor || '';
-                            if (name) {
-                                layer.bindTooltip(name, {
-                                    permanent: true,
-                                    direction: 'center',
-                                    className: 'landuse-label'
-                                });
-                            }
-                        }
-                        
-                        // Add click handler for zooming
-                        layer.on({
-                            click: zoomToFeature
-                        });
-                    }
-                });
-                
-                // Add to overlay control but don't add to map by default
-                overlayLayers["Wildlife Corridors"] = allLayers.wildlifeCorridors;
-                
-                resolve();
-            })
-            .catch(error => {
-                console.error("Error loading Wildlife Corridors data:", error);
-                resolve();
-            });
-    });
-}prop];
-                                if (value !== null && value !== undefined && value !== '') {
-                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
-                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
-                                }
-                            }
-                            
-                            popupContent += '</div>';
-                            layer.bindPopup(popupContent);
-                            
-                            // Add label if name available
-                            let name = feature.properties.name || feature.properties.Name || 
                                       feature.properties.NAME || feature.properties.Ward || '';
                             if (name) {
                                 layer.bindTooltip(name, {
@@ -832,7 +838,4 @@ function loadWildlifeCorridorsLayer(map) {
                     onEachFeature: function(feature, layer) {
                         // Add popup with properties
                         if (feature.properties) {
-                            let popupContent = '<div class="popup-content">';
-                            
-                            for (const prop in feature.properties) {
-                                const value = feature.properties[
+                            let popupContent = '

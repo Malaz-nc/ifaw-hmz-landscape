@@ -27,8 +27,8 @@ function initializeMap() {
     
     // Create the map with a global variable so we can access it elsewhere
     window.map = L.map('map', {
-        center: CONFIG.mapCenter,
-        zoom: CONFIG.defaultZoom,
+        center: [-18.86, 26.31], // Centered more on Hwange National Park
+        zoom: 9, // Closer zoom to focus on the area
         maxZoom: CONFIG.maxZoom,
         minZoom: CONFIG.minZoom
     });
@@ -44,9 +44,28 @@ function initializeMap() {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     });
     
+    const terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+        attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+    });
+    
+    const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+        maxZoom: 20,
+        subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+        attribution: '&copy; Google Maps'
+    });
+    
+    const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+        subdomains: 'abcd',
+        maxZoom: 20
+    });
+    
     const baseLayers = {
         "OpenStreetMap": osm,
-        "Satellite": satellite
+        "Satellite": satellite,
+        "Terrain": terrain,
+        "Google Terrain": googleTerrain,
+        "Carto Light": cartoLight
     };
     
     // Load all GeoJSON layers
@@ -213,11 +232,32 @@ function loadLandscapeBoundaryLayer(map) {
                 allLayers.landscapeBoundary = L.geoJSON(data, {
                     style: {
                         color: '#000',
-                        weight: 2,
+                        weight: 4, // Thicker line (increased from 2)
                         opacity: 1,
                         fillOpacity: 0
                     },
-                    onEachFeature: onEachFeature
+                    onEachFeature: function(feature, layer) {
+                        // Only add popup, no mouseover effects
+                        if (feature.properties) {
+                            let popupContent = '<div class="popup-content">';
+                            
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+                            
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                        }
+                        
+                        // Only add click handler for zooming
+                        layer.on({
+                            click: zoomToFeature
+                        });
+                    }
                 }).addTo(map);
                 
                 // Add to overlay control
@@ -249,12 +289,33 @@ function loadDistrictBoundariesLayer(map) {
                 allLayers.districtBoundaries = L.geoJSON(data, {
                     style: {
                         color: '#666',
-                        weight: 1.5,
+                        weight: 3, // Thicker line (increased from 1.5)
                         opacity: 0.8,
                         fillOpacity: 0,
                         dashArray: '5, 5'
                     },
-                    onEachFeature: onEachFeature
+                    onEachFeature: function(feature, layer) {
+                        // Only add popup, no mouseover effects
+                        if (feature.properties) {
+                            let popupContent = '<div class="popup-content">';
+                            
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+                            
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                        }
+                        
+                        // Only add click handler for zooming
+                        layer.on({
+                            click: zoomToFeature
+                        });
+                    }
                 });
                 
                 // Add to overlay control but don't add to map by default
@@ -285,11 +346,32 @@ function loadRiversLayer(map) {
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.rivers = L.geoJSON(data, {
                     style: {
-                        color: '#0000FF',
+                        color: '#87CEFA', // Light blue color
                         weight: 1.5,
-                        opacity: 0.8
+                        opacity: 0.4 // 40% opacity
                     },
-                    onEachFeature: onEachFeature
+                    onEachFeature: function(feature, layer) {
+                        // Only add popup, no mouseover effects
+                        if (feature.properties) {
+                            let popupContent = '<div class="popup-content">';
+                            
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+                            
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                        }
+                        
+                        // Only add click handler for zooming
+                        layer.on({
+                            click: zoomToFeature
+                        });
+                    }
                 });
                 
                 // Add to overlay control but don't add to map by default
@@ -320,11 +402,32 @@ function loadRoadsLayer(map) {
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.roads = L.geoJSON(data, {
                     style: {
-                        color: '#8B4513',
+                        color: '#8B4513', // Brown color
                         weight: 1.5,
-                        opacity: 0.8
+                        opacity: 0.4 // 40% opacity
                     },
-                    onEachFeature: onEachFeature
+                    onEachFeature: function(feature, layer) {
+                        // Only add popup, no mouseover effects
+                        if (feature.properties) {
+                            let popupContent = '<div class="popup-content">';
+                            
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+                            
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                        }
+                        
+                        // Only add click handler for zooming
+                        layer.on({
+                            click: zoomToFeature
+                        });
+                    }
                 });
                 
                 // Add to overlay control but don't add to map by default
@@ -364,7 +467,22 @@ function loadTownsLayer(map) {
                             fillOpacity: 0.8
                         });
                     },
-                    onEachFeature: onEachFeature
+                    onEachFeature: function(feature, layer) {
+                        // Only add popup, no mouseover effects
+                        if (feature.properties) {
+                            let popupContent = '<div class="popup-content">';
+                            
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+                            
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                        }
+                    }
                 });
                 
                 // Add to overlay control but don't add to map by default
@@ -396,7 +514,7 @@ function loadPlacesLayer(map) {
                 allLayers.places = L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
                         return L.circleMarker(latlng, {
-                            radius: 5,
+                            radius: 3, // Smaller circles (reduced from 5)
                             fillColor: "#FFA500",
                             color: "#000",
                             weight: 1,
@@ -404,7 +522,22 @@ function loadPlacesLayer(map) {
                             fillOpacity: 0.8
                         });
                     },
-                    onEachFeature: onEachFeature
+                    onEachFeature: function(feature, layer) {
+                        // Only add popup, no mouseover effects
+                        if (feature.properties) {
+                            let popupContent = '<div class="popup-content">';
+                            
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+                            
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+                        }
+                    }
                 });
                 
                 // Add to overlay control but don't add to map by default
@@ -572,42 +705,10 @@ function onEachFeature(feature, layer) {
         layer.bindPopup(popupContent);
     }
     
-    // Add hover effects
+    // Only add click handler for zooming, no mouseover effects
     layer.on({
-        mouseover: highlightFeature,
-        mouseout: resetHighlight,
         click: zoomToFeature
     });
-}
-
-// Highlight feature function
-function highlightFeature(e) {
-    const layer = e.target;
-    
-    layer.setStyle({
-        weight: 3,
-        color: '#666',
-        dashArray: '',
-        fillOpacity: 0.9
-    });
-    
-    if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
-        layer.bringToFront();
-    }
-}
-
-// Reset highlight function
-function resetHighlight(e) {
-    // Find which layer contains this feature
-    for (const layerName in allLayers) {
-        if (allLayers[layerName] && allLayers[layerName].resetStyle) {
-            try {
-                allLayers[layerName].resetStyle(e.target);
-            } catch (error) {
-                // Skip if the feature doesn't belong to this layer
-            }
-        }
-    }
 }
 
 // Zoom to feature function

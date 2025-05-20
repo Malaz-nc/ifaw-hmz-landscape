@@ -3,7 +3,7 @@ function debug(message) {
     console.log(`HMZ-WebGIS: ${message}`);
 }
 
-// Set up configuration 
+// Set up configuration
 const CONFIG = {
     mapCenter: [-18.5, 26], // Hwange-Matetsi-Zambezi area
     defaultZoom: 8,
@@ -18,7 +18,7 @@ const overlayLayers = {}; // For layer control
 // Initialize the map when document is ready
 document.addEventListener('DOMContentLoaded', function() {
     debug("Document ready, initializing map...");
-    
+
     // Add CSS for labels
     const style = document.createElement('style');
     style.innerHTML = `
@@ -44,14 +44,14 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     `;
     document.head.appendChild(style);
-    
+
     initializeMap();
 });
 
 // Initialize the map and load layers
 function initializeMap() {
     debug("Creating map...");
-    
+
     // Create the map with a global variable so we can access it elsewhere
     window.map = L.map('map', {
         center: [-18.86, 26.31], // Centered more on Hwange National Park
@@ -60,33 +60,33 @@ function initializeMap() {
         minZoom: CONFIG.minZoom
     });
     debug("Map created successfully");
-    
+
     // Add base layers
     debug("Setting up basemap layers...");
     const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(window.map);
-    
+
     const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
     });
-    
+
     const terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
         attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
     });
-    
+
     const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
         maxZoom: 20,
         subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
         attribution: '&copy; Google Maps'
     });
-    
+
     const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
         subdomains: 'abcd',
         maxZoom: 20
     });
-    
+
     const baseLayers = {
         "OpenStreetMap": osm,
         "Satellite": satellite,
@@ -94,7 +94,7 @@ function initializeMap() {
         "Google Terrain": googleTerrain,
         "Carto Light": cartoLight
     };
-    
+
     // Load all GeoJSON layers
     debug("Loading GeoJSON layers...");
     Promise.all([
@@ -110,12 +110,12 @@ function initializeMap() {
     .then(() => {
         debug("All layers loaded successfully");
         createLegend(window.map);
-        
+
         // Set up layer control with overlays
         L.control.layers(baseLayers, overlayLayers, {
             collapsed: false
         }).addTo(window.map);
-        
+
         // Hide loading indicator if it exists
         const loadingIndicator = document.getElementById('loading-indicator');
         if (loadingIndicator) {
@@ -127,19 +127,19 @@ function initializeMap() {
         // Update loading indicator to show error if it exists
         const loadingIndicator = document.getElementById('loading-indicator');
         if (loadingIndicator) {
-            loadingIndicator.innerHTML = 
+            loadingIndicator.innerHTML =
                 `Error loading map data: ${error.message}. Check console for details.`;
             loadingIndicator.style.color = 'red';
         }
     });
-    
+
     // Add scale
     L.control.scale({
         imperial: false,
         metric: true,
         position: 'bottomleft'
     }).addTo(window.map);
-    
+
     debug("Map controls initialized");
 }
 
@@ -155,19 +155,19 @@ function loadLandUseLayer(map) {
             })
             .then(data => {
                 debug("Land use data loaded successfully");
-                
+
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.landUse = L.geoJSON(data, {
                     style: styleLandUse,
-                    onEachFeature: onEachLandUseFeature  // Use specific function for land use features
+                    onEachFeature: onEachLandUseFeature   // Use specific function for land use features
                 }).addTo(map);
-                
+
                 // Add to overlay control
                 overlayLayers["Land Use"] = allLayers.landUse;
-                
+
                 // Fit the map to the bounds of the GeoJSON layer
                 map.fitBounds(allLayers.landUse.getBounds());
-                
+
                 resolve();
             })
             .catch(error => {
@@ -189,16 +189,16 @@ function loadCommunityCALayer(map) {
             })
             .then(data => {
                 debug("Community CA data loaded successfully");
-                
+
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.communityCA = L.geoJSON(data, {
                     style: styleCommunityCA,
-                    onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
+                    onEachFeature: onEachLandUseFeature   // Use the same labeling function as land use
                 }).addTo(map);
-                
+
                 // Add to overlay control
                 overlayLayers["Community Conservation Areas"] = allLayers.communityCA;
-                
+
                 resolve();
             })
             .catch(error => {
@@ -221,16 +221,16 @@ function loadMatetsiUnitsLayer(map) {
             })
             .then(data => {
                 debug("Matetsi Units data loaded successfully");
-                
+
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.matetsiUnits = L.geoJSON(data, {
                     style: styleMatetsiUnits,
-                    onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
+                    onEachFeature: onEachLandUseFeature   // Use the same labeling function as land use
                 }).addTo(map);
-                
+
                 // Add to overlay control
                 overlayLayers["Matetsi Units"] = allLayers.matetsiUnits;
-                
+
                 resolve();
             })
             .catch(error => {
@@ -253,7 +253,7 @@ function loadLandscapeBoundaryLayer(map) {
             })
             .then(data => {
                 debug("Landscape Boundary data loaded successfully");
-                
+
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.landscapeBoundary = L.geoJSON(data, {
                     style: {
@@ -266,7 +266,7 @@ function loadLandscapeBoundaryLayer(map) {
                         // Only add popup, no mouseover effects
                         if (feature.properties) {
                             let popupContent = '<div class="popup-content">';
-                            
+
                             for (const prop in feature.properties) {
                                 const value = feature.properties[prop];
                                 if (value !== null && value !== undefined && value !== '') {
@@ -274,21 +274,21 @@ function loadLandscapeBoundaryLayer(map) {
                                     popupContent += `<strong>${prop}:</strong> ${value}<br>`;
                                 }
                             }
-                            
+
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
                         }
-                        
+
                         // Only add click handler for zooming
                         layer.on({
                             click: zoomToFeature
                         });
                     }
                 }).addTo(map);
-                
+
                 // Add to overlay control
                 overlayLayers["Landscape Boundary"] = allLayers.landscapeBoundary;
-                
+
                 resolve();
             })
             .catch(error => {
@@ -310,7 +310,7 @@ function loadDistrictBoundariesLayer(map) {
             })
             .then(data => {
                 debug("District Boundaries data loaded successfully");
-                
+
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.districtBoundaries = L.geoJSON(data, {
                     style: {
@@ -324,7 +324,7 @@ function loadDistrictBoundariesLayer(map) {
                         // Only add popup, no mouseover effects
                         if (feature.properties) {
                             let popupContent = '<div class="popup-content">';
-                            
+
                             for (const prop in feature.properties) {
                                 const value = feature.properties[prop];
                                 if (value !== null && value !== undefined && value !== '') {
@@ -332,14 +332,14 @@ function loadDistrictBoundariesLayer(map) {
                                     popupContent += `<strong>${prop}:</strong> ${value}<br>`;
                                 }
                             }
-                            
+
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
-                            
+
                             // Add district name as label
-                            let name = feature.properties.name || feature.properties.Name || 
-                                      feature.properties.NAME || feature.properties.DISTRICT || 
-                                      feature.properties.District || '';
+                            let name = feature.properties.name || feature.properties.Name ||
+                                        feature.properties.NAME || feature.properties.DISTRICT ||
+                                        feature.properties.District || '';
                             if (name) {
                                 layer.bindTooltip(name, {
                                     permanent: true,
@@ -348,17 +348,17 @@ function loadDistrictBoundariesLayer(map) {
                                 });
                             }
                         }
-                        
+
                         // Only add click handler for zooming
                         layer.on({
                             click: zoomToFeature
                         });
                     }
                 });
-                
+
                 // Add to overlay control but don't add to map by default
                 overlayLayers["District Boundaries"] = allLayers.districtBoundaries;
-                
+
                 resolve();
             })
             .catch(error => {
@@ -380,7 +380,7 @@ function loadRiversLayer(map) {
             })
             .then(data => {
                 debug("Rivers data loaded successfully");
-                
+
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.rivers = L.geoJSON(data, {
                     style: {
@@ -392,7 +392,7 @@ function loadRiversLayer(map) {
                         // Only add popup, no mouseover effects
                         if (feature.properties) {
                             let popupContent = '<div class="popup-content">';
-                            
+
                             for (const prop in feature.properties) {
                                 const value = feature.properties[prop];
                                 if (value !== null && value !== undefined && value !== '') {
@@ -400,24 +400,30 @@ function loadRiversLayer(map) {
                                     popupContent += `<strong>${prop}:</strong> ${value}<br>`;
                                 }
                             }
-                            
+
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
-                            
-                            // REMOVED: River name labels are no longer displayed by default
-                            // Only display labels on demand when layer is turned on manually
+
+                            // Ensure no permanent tooltip is set for rivers by default
+                            // if (feature.properties && feature.properties.name) {
+                            //     layer.bindTooltip(feature.properties.name, {
+                            //         permanent: true,
+                            //         direction: 'bottom',
+                            //         className: 'river-label' // You might need to define CSS for this
+                            //     });
+                            // }
                         }
-                        
+
                         // Only add click handler for zooming
                         layer.on({
                             click: zoomToFeature
                         });
                     }
                 });
-                
+
                 // Add to overlay control but don't add to map by default
                 overlayLayers["Rivers"] = allLayers.rivers;
-                
+
                 resolve();
             })
             .catch(error => {
@@ -439,7 +445,7 @@ function loadRoadsLayer(map) {
             })
             .then(data => {
                 debug("Roads data loaded successfully");
-                
+
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.roads = L.geoJSON(data, {
                     style: {
@@ -451,7 +457,7 @@ function loadRoadsLayer(map) {
                         // Only add popup, no mouseover effects
                         if (feature.properties) {
                             let popupContent = '<div class="popup-content">';
-                            
+
                             for (const prop in feature.properties) {
                                 const value = feature.properties[prop];
                                 if (value !== null && value !== undefined && value !== '') {
@@ -459,21 +465,21 @@ function loadRoadsLayer(map) {
                                     popupContent += `<strong>${prop}:</strong> ${value}<br>`;
                                 }
                             }
-                            
+
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
                         }
-                        
+
                         // Only add click handler for zooming
                         layer.on({
                             click: zoomToFeature
                         });
                     }
                 });
-                
+
                 // Add to overlay control but don't add to map by default
                 overlayLayers["Roads"] = allLayers.roads;
-                
+
                 resolve();
             })
             .catch(error => {
@@ -495,7 +501,7 @@ function loadPlacesLayer(map) {
             })
             .then(data => {
                 debug("Places data loaded successfully");
-                
+
                 // Add GeoJSON to map with point markers
                 allLayers.places = L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
@@ -512,23 +518,23 @@ function loadPlacesLayer(map) {
                         // Only add popup, no mouseover effects
                         if (feature.properties) {
                             let popupContent = '<div class="popup-content">';
-                            
+
                             for (const prop in feature.properties) {
                                 const value = feature.properties[prop];
                                 if (value !== null && value !== undefined && value !== '') {
                                     popupContent += `<strong>${prop}:</strong> ${value}<br>`;
                                 }
                             }
-                            
+
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
-                            
+
                             // Look specifically for FULL_NAME property as requested
-                            let name = feature.properties.FULL_NAME || feature.properties.full_name || 
-                                    feature.properties.name || feature.properties.Name || 
-                                    feature.properties.NAME || feature.properties.title || 
-                                    feature.properties.TITLE || '';
-                                    
+                            let name = feature.properties.FULL_NAME || feature.properties.full_name ||
+                                        feature.properties.name || feature.properties.Name ||
+                                        feature.properties.NAME || feature.properties.title ||
+                                        feature.properties.TITLE || '';
+
                             if (name) {
                                 layer.bindTooltip(name, {
                                     permanent: true, // Make labels permanent by default
@@ -540,10 +546,10 @@ function loadPlacesLayer(map) {
                         }
                     }
                 }).addTo(map); // Add to map by default
-                
+
                 // Add to overlay control
                 overlayLayers["Places"] = allLayers.places;
-                
+
                 resolve();
             })
             .catch(error => {
@@ -558,26 +564,26 @@ function findDesignationProperty(properties) {
     // Check for common property names that might contain designation information
     // Listed in order of preference
     const possibleProps = [
-        'desig', 'designation', 'type', 'class', 'landuse', 'land_use', 
+        'desig', 'designation', 'type', 'class', 'landuse', 'land_use',
         'landcover', 'land_cover', 'category', 'zone'
     ];
-    
+
     for (const prop of possibleProps) {
         if (properties[prop] !== undefined && properties[prop] !== null && properties[prop] !== '') {
             return properties[prop];
         }
     }
-    
+
     // If we can't find a specific designation property, try to find anything with "park", "forest", etc.
     for (const prop in properties) {
         const value = String(properties[prop]).toLowerCase();
-        if (value.includes('park') || value.includes('forest') || 
+        if (value.includes('park') || value.includes('forest') ||
             value.includes('safari') || value.includes('conservation') ||
             value.includes('reserve') || value.includes('protected')) {
             return properties[prop];
         }
     }
-    
+
     return 'Unknown';
 }
 
@@ -585,38 +591,38 @@ function findDesignationProperty(properties) {
 function getColor(designation) {
     // Default color for Unknown/Resettlement Areas is brown
     let color = '#A52A2A'; // Brown for "Resettlement Area/Unknown"
-    
+
     // If no designation provided, return brown (default)
     if (!designation) return color;
-    
+
     // Convert designation to lowercase for case-insensitive comparison
     const desig = String(designation).toLowerCase();
-    
+
     // Debug the designation
     debug(`Checking designation: "${desig}"`);
-    
+
     // Assign colors based on designation types
     if (desig.includes('national park') || desig.includes('np') || desig.includes('park')) {
         color = '#90EE90'; // Light green for National Parks
         debug(`  Matched as National Park: ${color}`);
-    } else if (desig.includes('forest') || desig.includes('forestry') || 
-              desig.includes('state forest') || desig.includes('reserve') ||
-              desig.includes('fr ')) {
+    } else if (desig.includes('forest') || desig.includes('forestry') ||
+               desig.includes('state forest') || desig.includes('reserve') ||
+               desig.includes('fr ')) {
         color = '#006400'; // Dark green for Forest areas
         debug(`  Matched as Forest: ${color}`);
-    } else if (desig.includes('safari') || desig.includes('game') || 
-              desig.includes('hunting') || desig.includes('sa ')) {
+    } else if (desig.includes('safari') || desig.includes('game') ||
+               desig.includes('hunting') || desig.includes('sa ')) {
         color = '#F5DEB3'; // Beige for Safari areas
         debug(`  Matched as Safari: ${color}`);
-    } else if (desig.includes('community') || desig.includes('conservancy') || 
-              desig.includes('concession') || desig.includes('ca ') ||
-              desig.includes('ct/') || desig.includes('ct')) {
+    } else if (desig.includes('community') || desig.includes('conservancy') ||
+               desig.includes('concession') || desig.includes('ca ') ||
+               desig.includes('ct/') || desig.includes('ct')) {
         color = '#D2B48C'; // Tan/Brown for Community Conservation Areas
         debug(`  Matched as Community: ${color}`);
     } else {
         debug(`  No match - using Resettlement Area: ${color}`);
     }
-    
+
     return color;
 }
 
@@ -624,10 +630,10 @@ function getColor(designation) {
 function styleLandUse(feature) {
     // Find the designation property
     const designation = findDesignationProperty(feature.properties);
-    
+
     // Get color based on designation
     const color = getColor(designation);
-    
+
     return {
         fillColor: color,
         weight: 1,
@@ -668,43 +674,43 @@ function onEachLandUseFeature(feature, layer) {
     if (feature.properties) {
         // Find the most likely name and designation properties
         const designation = findDesignationProperty(feature.properties);
-        let name = feature.properties.name || feature.properties.Name || 
-                  feature.properties.NAME || feature.properties.title || 
-                  feature.properties.TITLE || '';
-        
+        let name = feature.properties.name || feature.properties.Name ||
+                    feature.properties.NAME || feature.properties.title ||
+                    feature.properties.TITLE || '';
+
         let popupContent = '<div class="popup-content">';
-        
+
         // Add designation if available
         if (designation) {
             // If the designation is "Unknown", display "Resettlement Area" instead
             const displayDesignation = designation === 'Unknown' ? 'Resettlement Area' : designation;
             popupContent += `<strong>Designation:</strong> ${displayDesignation}<br>`;
         }
-        
+
         // Add name if available
         if (name) {
             popupContent += `<strong>Name:</strong> ${name}<br>`;
         }
-        
+
         // Add all other properties that might be useful
         for (const prop in feature.properties) {
             // Skip properties we've already included or that are empty
             if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
-            if (prop === 'name' || prop === 'Name' || prop === 'NAME' || 
+            if (prop === 'name' || prop === 'Name' || prop === 'NAME' ||
                 prop === 'desig' || prop === 'designation' || prop === 'type') continue;
-            
+
             const value = feature.properties[prop];
             if (value !== null && value !== undefined && value !== '') {
                 popupContent += `<strong>${prop}:</strong> ${value}<br>`;
             }
         }
-        
+
         // Close the popup content div
         popupContent += '</div>';
-        
+
         // Bind popup to layer
         layer.bindPopup(popupContent);
-        
+
         // Add label for land use - ENSURE THIS WORKS BY MAKING LABEL PERMANENT
         if (name) {
             // Use a timeout to ensure labels are applied after the map is fully loaded
@@ -720,7 +726,7 @@ function onEachLandUseFeature(feature, layer) {
                         // For other geometries, just use the layer's coordinates
                         centroid = layer.getLatLng();
                     }
-                    
+
                     // Create a marker at the centroid with the label
                     const labelMarker = L.marker(centroid, {
                         icon: L.divIcon({
@@ -730,7 +736,7 @@ function onEachLandUseFeature(feature, layer) {
                             iconAnchor: [50, 10]
                         })
                     }).addTo(window.map);
-                    
+
                     // Store the label marker reference to allow toggling it with the layer
                     layer.labelMarker = labelMarker;
                 } catch (e) {
@@ -739,7 +745,7 @@ function onEachLandUseFeature(feature, layer) {
             }, 500);
         }
     }
-    
+
     // Only add click handler for zooming, no mouseover effects
     layer.on({
         click: zoomToFeature
@@ -751,25 +757,25 @@ function onEachFeature(feature, layer) {
     // Create a popup with feature information
     if (feature.properties) {
         let popupContent = '<div class="popup-content">';
-        
+
         // Loop through all properties and add them to the popup
         for (const prop in feature.properties) {
             const value = feature.properties[prop];
             if (value !== null && value !== undefined && value !== '') {
                 // Skip some properties that aren't interesting for display
                 if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
-                
+
                 popupContent += `<strong>${prop}:</strong> ${value}<br>`;
             }
         }
-        
+
         // Close the popup content div
         popupContent += '</div>';
-        
+
         // Bind popup to layer
         layer.bindPopup(popupContent);
     }
-    
+
     // Only add click handler for zooming, no mouseover effects
     layer.on({
         click: zoomToFeature
@@ -781,40 +787,29 @@ function zoomToFeature(e) {
     window.map.fitBounds(e.target.getBounds());
 }
 
-// Create a legend for the map
+// Create legend function
 function createLegend(map) {
-    try {
-        const legend = L.control({ position: 'bottomright' });
-        
-        legend.onAdd = function() {
-            const div = L.DomUtil.create('div', 'info legend');
-            const categories = [
-                { name: 'National Park', value: 'national park' },
-                { name: 'Forest/State Forest', value: 'forest' },
-                { name: 'Safari Area', value: 'safari' },
-                { name: 'Community Conservation', value: '8B4513', isHex: true },
-                { name: 'Resettlement Area', value: '' }
-            ];
-            
-            div.innerHTML = '<h4>Land Designation</h4>';
-            
-            // Loop through our categories and generate a label with a colored square for each
-            for (let i = 0; i < categories.length; i++) {
-                const color = categories[i].isHex ? 
-                              categories[i].value : 
-                              getColor(categories[i].value);
-                div.innerHTML +=
-                    '<i style="background:' + (categories[i].isHex ? '#' + categories[i].value : color) + '"></i> ' +
-                    categories[i].name + '<br>';
-            }
-            
-            return div;
-        };
-        
-        legend.addTo(map);
-        
-        return legend;
-    } catch (error) {
-        console.error("Error creating legend:", error);
-    }
+    const legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        const designations = [
+            { name: 'National Park', color: '#90EE90' },
+            { name: 'Forest Area', color: '#006400' },
+            { name: 'Safari Area', color: '#F5DEB3' },
+            { name: 'Community Conservation Area', color: '#D2B48C' },
+            { name: 'Resettlement Area/Unknown', color: '#A52A2A' }
+        ];
+
+        div.innerHTML += '<h4>Legend</h4>';
+        for (let i = 0; i < designations.length; i++) {
+            div.innerHTML +=
+                '<i style="background:' + designations[i].color + '"></i> ' +
+                designations[i].name + '<br>';
+        }
+
+        return div;
+    };
+
+    legend.addTo(map);
 }

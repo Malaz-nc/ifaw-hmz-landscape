@@ -1,10 +1,119 @@
-// Initialize the map centered on Hwange-Matetsi-Zambezi area
-const map = L.map('map').setView([-18.5, 26], 8);
+// Simple debug function to log messages to console
+function debug(message) {
+    console.log(`DEBUG: ${message}`);
+}
 
-// Add OpenStreetMap as the base layer
-L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-}).addTo(map);
+// Set up configuration 
+const CONFIG = {
+    mapCenter: [-18.5, 26], // Hwange-Matetsi-Zambezi area
+    defaultZoom: 8,
+    maxZoom: 18,
+    minZoom: 5
+};
+
+// Store all layers
+const allLayers = {};
+
+// Initialize the map when document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    debug("Document ready, initializing map...");
+    initializeMap();
+});
+
+// Initialize the map and load layers
+function initializeMap() {
+    debug("Creating map...");
+    
+    // Create the map
+    const map = L.map('map', {
+        center: CONFIG.mapCenter,
+        zoom: CONFIG.defaultZoom,
+        maxZoom: CONFIG.maxZoom,
+        minZoom: CONFIG.minZoom
+    });
+    debug("Map created successfully");
+    
+    // Add base layers
+    debug("Setting up basemap layers...");
+    const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(map);
+    
+    const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+    });
+    
+    const baseLayers = {
+        "OpenStreetMap": osm,
+        "Satellite": satellite
+    };
+    
+    // Load GeoJSON layers
+    debug("Loading GeoJSON layers...");
+    loadLandUseLayer(map)
+        .then(() => {
+            debug("All layers loaded successfully");
+            createLegend(map);
+            
+            // Hide loading indicator
+            document.getElementById('loading-indicator').style.display = 'none';
+        })
+        .catch(error => {
+            console.error("Error loading layers:", error);
+            // Update loading indicator to show error
+            document.getElementById('loading-indicator').innerHTML = 
+                `Error loading map data: ${error.message}. Check console for details.`;
+            document.getElementById('loading-indicator').style.color = 'red';
+        });
+    
+    // Add layer controls
+    debug("Initializing map controls...");
+    L.control.layers(baseLayers, null, {
+        collapsed: false
+    }).addTo(map);
+    
+    // Add scale
+    L.control.scale({
+        imperial: false,
+        metric: true,
+        position: 'bottomleft'
+    }).addTo(map);
+    
+    debug("Map controls initialized");
+}
+
+// Function to load the land use layer
+function loadLandUseLayer(map) {
+    return new Promise((resolve, reject) => {
+        fetch('data/landuse.geojson')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                debug("Land use data loaded successfully");
+                
+                // Add GeoJSON to map with styling and interactivity
+                allLayers.landUse = L.geoJSON(data, {
+                    style: styleLandUse,
+                    onEachFeature: onEachFeature
+                }).addTo(map);
+                
+                // Fit the map to the bounds of the GeoJSON layer
+                map.fitBounds(allLayers.landUse.getBounds());
+                
+                resolve();
+            })
+            .catch(error => {
+                console.error("Error loading land use data:", error);
+                document.getElementById('map').innerHTML = 
+                    `<p class="error-message">Error loading land use data: ${error.message}. Please check the console for details.</p>`;
+                reject(error);
+            });
+    });
+}
 
 // Function to determine color based on the designation
 function getColor(designation) {
@@ -29,7 +138,7 @@ function getColor(designation) {
 }
 
 // Style function for GeoJSON features
-function style(feature) {
+function styleLandUse(feature) {
     return {
         fillColor: getColor(feature.properties.desig),
         weight: 1,
@@ -56,7 +165,7 @@ function onEachFeature(feature, layer) {
             popupContent += `<strong>Name:</strong> ${feature.properties.name}<br>`;
         }
         
-        // Add any other relevant properties you want to display
+        // Add any other relevant properties
         popupContent += '</div>';
         
         layer.bindPopup(popupContent);
@@ -87,61 +196,43 @@ function highlightFeature(e) {
 
 // Reset highlight function
 function resetHighlight(e) {
-    landUseLayer.resetStyle(e.target);
+    // Find which layer contains this feature and reset its style
+    if (allLayers.landUse) {
+        allLayers.landUse.resetStyle(e.target);
+    }
 }
 
 // Create a legend for the map
-function createLegend() {
-    const legend = L.control({ position: 'bottomright' });
-    
-    legend.onAdd = function() {
-        const div = L.DomUtil.create('div', 'info legend');
-        const categories = [
-            { name: 'National Park', value: 'national park' },
-            { name: 'Forest/State Forest', value: 'forest' },
-            { name: 'Safari Area', value: 'safari' },
-            { name: 'Community Conservation', value: 'community' },
-            { name: 'Other', value: '' }
-        ];
+function createLegend(map) {
+    try {
+        const legend = L.control({ position: 'bottomright' });
         
-        div.innerHTML = '<h4>Land Designation</h4>';
+        legend.onAdd = function() {
+            const div = L.DomUtil.create('div', 'info legend');
+            const categories = [
+                { name: 'National Park', value: 'national park' },
+                { name: 'Forest/State Forest', value: 'forest' },
+                { name: 'Safari Area', value: 'safari' },
+                { name: 'Community Conservation', value: 'community' },
+                { name: 'Other', value: '' }
+            ];
+            
+            div.innerHTML = '<h4>Land Designation</h4>';
+            
+            // Loop through our categories and generate a label with a colored square for each
+            for (let i = 0; i < categories.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + getColor(categories[i].value) + '"></i> ' +
+                    categories[i].name + '<br>';
+            }
+            
+            return div;
+        };
         
-        // Loop through our categories and generate a label with a colored square for each
-        for (let i = 0; i < categories.length; i++) {
-            div.innerHTML +=
-                '<i style="background:' + getColor(categories[i].value) + '"></i> ' +
-                categories[i].name + '<br>';
-        }
+        legend.addTo(map);
         
-        return div;
-    };
-    
-    return legend;
+        return legend;
+    } catch (error) {
+        console.error("Error creating legend:", error);
+    }
 }
-
-// Load the landuse GeoJSON data
-let landUseLayer;
-fetch('data/landuse.geojson')
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok: ' + response.statusText);
-        }
-        return response.json();
-    })
-    .then(data => {
-        // Add GeoJSON to map with styling and interactivity
-        landUseLayer = L.geoJSON(data, {
-            style: style,
-            onEachFeature: onEachFeature
-        }).addTo(map);
-        
-        // Fit the map to the bounds of the GeoJSON layer
-        map.fitBounds(landUseLayer.getBounds());
-        
-        // Add the legend to the map
-        createLegend().addTo(map);
-    })
-    .catch(error => {
-        console.error('Error loading GeoJSON data:', error);
-        document.getElementById('map').innerHTML = '<p class="error-message">Error loading map data. Please check the console for details.</p>';
-    });

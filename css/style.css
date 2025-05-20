@@ -3,6 +3,7 @@
     height: 85vh;
     width: 100%;
     border: 1px solid #ccc;
+    position: relative;
 }
 
 body {
@@ -20,6 +21,18 @@ body {
 h1 {
     color: #333;
     margin-bottom: 15px;
+}
+
+/* Loading indicator */
+#loading-indicator {
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+    margin-bottom: 10px;
+    text-align: center;
+    font-weight: bold;
+    color: #666;
+    display: block; /* Will be hidden via JavaScript once map loads */
 }
 
 /* Legend styles */
@@ -68,7 +81,15 @@ h1 {
     font-weight: bold;
 }
 
-/* Land use colors defined in the JS, but can also be defined here */
+/* Land use colors */
+.color-box {
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    vertical-align: middle;
+}
+
 .national-park {
     background-color: #90EE90; /* Light green */
 }
@@ -83,4 +104,20 @@ h1 {
 
 .community {
     background-color: #D2B48C; /* Tan/Brown */
+}
+
+#map-info {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #ddd;
+}
+
+#map-info ul {
+    list-style-type: none;
+    padding-left: 10px;
+}
+
+#map-info li {
+    margin-bottom: 5px;
 }

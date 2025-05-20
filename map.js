@@ -55,15 +55,21 @@ function initializeMap() {
             debug("All layers loaded successfully");
             createLegend(map);
             
-            // Hide loading indicator
-            document.getElementById('loading-indicator').style.display = 'none';
+            // Hide loading indicator if it exists
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
         })
         .catch(error => {
             console.error("Error loading layers:", error);
-            // Update loading indicator to show error
-            document.getElementById('loading-indicator').innerHTML = 
-                `Error loading map data: ${error.message}. Check console for details.`;
-            document.getElementById('loading-indicator').style.color = 'red';
+            // Update loading indicator to show error if it exists
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.innerHTML = 
+                    `Error loading map data: ${error.message}. Check console for details.`;
+                loadingIndicator.style.color = 'red';
+            }
         });
     
     // Add layer controls
@@ -95,6 +101,11 @@ function loadLandUseLayer(map) {
             .then(data => {
                 debug("Land use data loaded successfully");
                 
+                // DEBUG: Log the first feature to check its properties
+                if (data.features && data.features.length > 0) {
+                    console.log("Sample feature properties:", data.features[0].properties);
+                }
+                
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.landUse = L.geoJSON(data, {
                     style: styleLandUse,
@@ -118,19 +129,22 @@ function loadLandUseLayer(map) {
 // Function to determine color based on the designation
 function getColor(designation) {
     // Default color if designation doesn't match any case
-    let color = '#AAAAAA';
+    let color = '#AAAAAA'; // Gray for "Other"
+    
+    // If no designation provided, return default
+    if (!designation) return color;
     
     // Convert designation to lowercase for case-insensitive comparison
-    const desig = designation ? designation.toLowerCase() : '';
+    const desig = designation.toLowerCase();
     
     // Assign colors based on designation types
     if (desig.includes('national park')) {
         color = '#90EE90'; // Light green for National Parks
-    } else if (desig.includes('forest') || desig.includes('state forest')) {
+    } else if (desig.includes('forest') || desig.includes('forestry') || desig.includes('state forest') || desig.includes('reserve')) {
         color = '#006400'; // Dark green for Forest areas
-    } else if (desig.includes('safari') || desig.includes('game reserve')) {
+    } else if (desig.includes('safari') || desig.includes('game') || desig.includes('hunting')) {
         color = '#F5DEB3'; // Beige for Safari areas
-    } else if (desig.includes('community') || desig.includes('conservancy')) {
+    } else if (desig.includes('community') || desig.includes('conservancy') || desig.includes('concession')) {
         color = '#D2B48C'; // Tan/Brown for Community Conservation Areas
     }
     
@@ -139,8 +153,15 @@ function getColor(designation) {
 
 // Style function for GeoJSON features
 function styleLandUse(feature) {
+    // Log what property we're using for designation
+    const desig = feature.properties.desig || feature.properties.designation || feature.properties.type || 'Unknown';
+    const color = getColor(desig);
+    
+    // Debug log the color assignment
+    console.log(`Styling feature: "${desig}" with color: ${color}`);
+    
     return {
-        fillColor: getColor(feature.properties.desig),
+        fillColor: color,
         weight: 1,
         opacity: 1,
         color: '#666',
@@ -153,11 +174,15 @@ function styleLandUse(feature) {
 function onEachFeature(feature, layer) {
     // Create a popup with feature information
     if (feature.properties) {
+        // Log the feature properties to debug
+        console.log('Feature properties:', feature.properties);
+        
         let popupContent = '<div class="popup-content">';
         
-        // Add designation if available
-        if (feature.properties.desig) {
-            popupContent += `<strong>Designation:</strong> ${feature.properties.desig}<br>`;
+        // Add designation if available (check multiple possible property names)
+        const designation = feature.properties.desig || feature.properties.designation || feature.properties.type;
+        if (designation) {
+            popupContent += `<strong>Designation:</strong> ${designation}<br>`;
         }
         
         // Add name if available
@@ -165,16 +190,29 @@ function onEachFeature(feature, layer) {
             popupContent += `<strong>Name:</strong> ${feature.properties.name}<br>`;
         }
         
-        // Add any other relevant properties
+        // Add any other important properties that might be in the dataset
+        // This will show any property that isn't 'desig', 'designation', 'type', or 'name'
+        for (const prop in feature.properties) {
+            if (!['desig', 'designation', 'type', 'name'].includes(prop) && 
+                feature.properties[prop] !== null && 
+                feature.properties[prop] !== undefined &&
+                feature.properties[prop] !== '') {
+                popupContent += `<strong>${prop}:</strong> ${feature.properties[prop]}<br>`;
+            }
+        }
+        
+        // Close the popup content div
         popupContent += '</div>';
         
+        // Bind popup to layer
         layer.bindPopup(popupContent);
     }
     
     // Add hover effects
     layer.on({
         mouseover: highlightFeature,
-        mouseout: resetHighlight
+        mouseout: resetHighlight,
+        click: zoomToFeature
     });
 }
 
@@ -196,10 +234,14 @@ function highlightFeature(e) {
 
 // Reset highlight function
 function resetHighlight(e) {
-    // Find which layer contains this feature and reset its style
     if (allLayers.landUse) {
         allLayers.landUse.resetStyle(e.target);
     }
+}
+
+// Zoom to feature function
+function zoomToFeature(e) {
+    map.fitBounds(e.target.getBounds());
 }
 
 // Create a legend for the map

@@ -23,22 +23,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const style = document.createElement('style');
     style.innerHTML = `
         .landuse-label {
-            background: none;
-            border: none;
-            box-shadow: none;
-            font-size: 10px;
-            font-weight: bold;
-            color: #333;
-            text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            color: #333 !important;
+            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+            pointer-events: none !important;
         }
         .place-label {
-            background: none;
-            border: none;
-            box-shadow: none;
-            font-size: 10px;
-            font-weight: bold;
-            color: #000;
-            text-shadow: 1px 1px 2px white, -1px -1px 2px white, 1px -1px 2px white, -1px 1px 2px white;
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            color: #000 !important;
+            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+            pointer-events: none !important;
         }
     `;
     document.head.appendChild(style);
@@ -103,7 +105,6 @@ function initializeMap() {
         loadDistrictBoundariesLayer(window.map),
         loadRiversLayer(window.map),
         loadRoadsLayer(window.map),
-        // loadTownsLayer(window.map), // Removed towns layer
         loadPlacesLayer(window.map)
     ])
     .then(() => {
@@ -158,7 +159,7 @@ function loadLandUseLayer(map) {
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.landUse = L.geoJSON(data, {
                     style: styleLandUse,
-                    onEachFeature: onEachFeature
+                    onEachFeature: onEachLandUseFeature  // Use specific function for land use features
                 }).addTo(map);
                 
                 // Add to overlay control
@@ -192,7 +193,7 @@ function loadCommunityCALayer(map) {
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.communityCA = L.geoJSON(data, {
                     style: styleCommunityCA,
-                    onEachFeature: onEachFeature
+                    onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
                 }).addTo(map);
                 
                 // Add to overlay control
@@ -224,7 +225,7 @@ function loadMatetsiUnitsLayer(map) {
                 // Add GeoJSON to map with styling and interactivity
                 allLayers.matetsiUnits = L.geoJSON(data, {
                     style: styleMatetsiUnits,
-                    onEachFeature: onEachFeature
+                    onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
                 }).addTo(map);
                 
                 // Add to overlay control
@@ -334,6 +335,18 @@ function loadDistrictBoundariesLayer(map) {
                             
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
+                            
+                            // Add district name as label
+                            let name = feature.properties.name || feature.properties.Name || 
+                                      feature.properties.NAME || feature.properties.DISTRICT || 
+                                      feature.properties.District || '';
+                            if (name) {
+                                layer.bindTooltip(name, {
+                                    permanent: true,
+                                    direction: 'center',
+                                    className: 'landuse-label'
+                                });
+                            }
                         }
                         
                         // Only add click handler for zooming
@@ -390,6 +403,17 @@ function loadRiversLayer(map) {
                             
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
+                            
+                            // Add river name as label if available
+                            let name = feature.properties.name || feature.properties.Name || 
+                                    feature.properties.NAME || '';
+                            if (name) {
+                                layer.bindTooltip(name, {
+                                    permanent: true,
+                                    direction: 'center',
+                                    className: 'place-label'
+                                });
+                            }
                         }
                         
                         // Only add click handler for zooming
@@ -484,7 +508,7 @@ function loadPlacesLayer(map) {
                 allLayers.places = L.geoJSON(data, {
                     pointToLayer: function(feature, latlng) {
                         return L.circleMarker(latlng, {
-                            radius: 2, // Changed from 1 to 2
+                            radius: 4, // Increased from 2 to 4 to make more visible
                             fillColor: "#FFA500",
                             color: "#000",
                             weight: 1,
@@ -515,6 +539,7 @@ function loadPlacesLayer(map) {
                                 layer.bindTooltip(name, {
                                     permanent: true,
                                     direction: 'right',
+                                    offset: [10, 0], // Add offset to prevent overlap with marker
                                     className: 'place-label'
                                 });
                             }
@@ -574,28 +599,28 @@ function getColor(designation) {
     const desig = String(designation).toLowerCase();
     
     // Debug the designation
-    console.log(`Checking designation: "${desig}"`);
+    debug(`Checking designation: "${desig}"`);
     
     // Assign colors based on designation types
     if (desig.includes('national park') || desig.includes('np') || desig.includes('park')) {
         color = '#90EE90'; // Light green for National Parks
-        console.log(`  Matched as National Park: ${color}`);
+        debug(`  Matched as National Park: ${color}`);
     } else if (desig.includes('forest') || desig.includes('forestry') || 
               desig.includes('state forest') || desig.includes('reserve') ||
               desig.includes('fr ')) {
         color = '#006400'; // Dark green for Forest areas
-        console.log(`  Matched as Forest: ${color}`);
+        debug(`  Matched as Forest: ${color}`);
     } else if (desig.includes('safari') || desig.includes('game') || 
               desig.includes('hunting') || desig.includes('sa ')) {
         color = '#F5DEB3'; // Beige for Safari areas
-        console.log(`  Matched as Safari: ${color}`);
+        debug(`  Matched as Safari: ${color}`);
     } else if (desig.includes('community') || desig.includes('conservancy') || 
               desig.includes('concession') || desig.includes('ca ') ||
               desig.includes('ct/') || desig.includes('ct')) {
         color = '#D2B48C'; // Tan/Brown for Community Conservation Areas
-        console.log(`  Matched as Community: ${color}`);
+        debug(`  Matched as Community: ${color}`);
     } else {
-        console.log(`  No match - using Resettlement Area: ${color}`);
+        debug(`  No match - using Resettlement Area: ${color}`);
     }
     
     return color;
@@ -643,8 +668,8 @@ function styleMatetsiUnits(feature) {
     };
 }
 
-// Function to add interactivity to each feature - removed hover effects
-function onEachFeature(feature, layer) {
+// Specific function for land use features to ensure proper labeling
+function onEachLandUseFeature(feature, layer) {
     // Create a popup with feature information
     if (feature.properties) {
         // Find the most likely name and designation properties
@@ -686,14 +711,69 @@ function onEachFeature(feature, layer) {
         // Bind popup to layer
         layer.bindPopup(popupContent);
         
-        // Add label for land use
+        // Add label for land use - ENSURE THIS WORKS BY MAKING LABEL PERMANENT
         if (name) {
-            layer.bindTooltip(name, {
-                permanent: true,
-                direction: 'center',
-                className: 'landuse-label'
-            });
+            // Use a timeout to ensure labels are applied after the map is fully loaded
+            setTimeout(() => {
+                try {
+                    // Get centroid for better label placement
+                    let centroid;
+                    if (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon") {
+                        // For polygons, use the layer's getBounds method to find the center
+                        const bounds = layer.getBounds();
+                        centroid = bounds.getCenter();
+                    } else {
+                        // For other geometries, just use the layer's coordinates
+                        centroid = layer.getLatLng();
+                    }
+                    
+                    // Create a marker at the centroid with the label
+                    const labelMarker = L.marker(centroid, {
+                        icon: L.divIcon({
+                            html: name,
+                            className: 'landuse-label',
+                            iconSize: [100, 20],
+                            iconAnchor: [50, 10]
+                        })
+                    }).addTo(window.map);
+                    
+                    // Store the label marker reference to allow toggling it with the layer
+                    layer.labelMarker = labelMarker;
+                } catch (e) {
+                    console.error("Error adding label:", e);
+                }
+            }, 500);
         }
+    }
+    
+    // Only add click handler for zooming, no mouseover effects
+    layer.on({
+        click: zoomToFeature
+    });
+}
+
+// Function to add interactivity to general features (without labels)
+function onEachFeature(feature, layer) {
+    // Create a popup with feature information
+    if (feature.properties) {
+        let popupContent = '<div class="popup-content">';
+        
+        // Loop through all properties and add them to the popup
+        for (const prop in feature.properties) {
+            const value = feature.properties[prop];
+            if (value !== null && value !== undefined && value !== '') {
+                // Skip some properties that aren't interesting for display
+                if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                
+                popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+            }
+        }
+        
+        // Close the popup content div
+        popupContent += '</div>';
+        
+        // Bind popup to layer
+        layer.bindPopup(popupContent);
     }
     
     // Only add click handler for zooming, no mouseover effects

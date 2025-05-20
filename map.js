@@ -165,10 +165,10 @@ function findDesignationProperty(properties) {
 
 // Function to determine color based on the designation
 function getColor(designation) {
-    // Default color if designation doesn't match any case
-    let color = '#AAAAAA'; // Gray for "Other"
+    // Default color for Unknown/Resettlement Areas will now be brown
+    let color = '#A52A2A'; // Brown for "Resettlement Area/Unknown"
     
-    // If no designation provided, return default
+    // If no designation provided, return brown (default)
     if (!designation) return color;
     
     // Convert designation to lowercase for case-insensitive comparison
@@ -196,7 +196,7 @@ function getColor(designation) {
         color = '#D2B48C'; // Tan/Brown for Community Conservation Areas
         console.log(`  Matched as Community: ${color}`);
     } else {
-        console.log(`  No match - using default: ${color}`);
+        console.log(`  No match - using Resettlement Area: ${color}`);
     }
     
     return color;
@@ -237,7 +237,9 @@ function onEachFeature(feature, layer) {
         
         // Add designation if available
         if (designation) {
-            popupContent += `<strong>Designation:</strong> ${designation}<br>`;
+            // If the designation is "Unknown", display "Resettlement Area" instead
+            const displayDesignation = designation === 'Unknown' ? 'Resettlement Area' : designation;
+            popupContent += `<strong>Designation:</strong> ${displayDesignation}<br>`;
         }
         
         // Add name if available
@@ -313,7 +315,7 @@ function createLegend(map) {
                 { name: 'Forest/State Forest', value: 'forest' },
                 { name: 'Safari Area', value: 'safari' },
                 { name: 'Community Conservation', value: 'community' },
-                { name: 'Other', value: '' }
+                { name: 'Resettlement Area', value: '' } // Changed from "Other" to "Resettlement Area"
             ];
             
             div.innerHTML = '<h4>Land Designation</h4>';

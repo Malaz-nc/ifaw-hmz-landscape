@@ -16,631 +16,7 @@
             padding: 0;
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
-        }
-        
-        .container {
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
-        }
-        
-        h1 {
-            color: #333;
-            margin-bottom: 15px;
-        }
-        
-        /* Map container - KEEP THE ID AS landuse-map to match the JS */
-        #landuse-map {
-            height: 80vh;
-            width: 100%;
-            border: 1px solid #ccc;
-            position: relative;
-            z-index: 1; /* Ensure map is below tooltips/popups */
-        }
-        
-        /* Loading indicator */
-        #loading-indicator {
-            padding: 10px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            margin-bottom: 10px;
-            text-align: center;
-            font-weight: bold;
-            color: #666;
-        }
-        
-        /* Info box styles */
-        .info {
-            padding: 6px 8px;
-            font: 14px/16px Arial, Helvetica, sans-serif;
-            background: white;
-            background: rgba(255, 255, 255, 0.8);
-            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
-            border-radius: 5px;
-        }
-        
-        .info h4 {
-            margin: 0 0 5px;
-            color: #333;
-        }
-        
-        .legend {
-            line-height: 18px;
-            color: #555;
-        }
-        
-        .legend i {
-            width: 18px;
-            height: 18px;
-            float: left;
-            margin-right: 8px;
-            opacity: 0.7;
-        }
-        
-        /* Popup styles */
-        .popup-content {
-            padding: 10px;
-            font-size: 14px;
-        }
-        
-        .popup-content strong {
-            color: #333;
-        }
-        
-        /* Error message */
-        .error-message {
-            color: red;
-            text-align: center;
-            padding: 20px;
-            font-weight: bold;
-        }
-        
-        /* Land use colors */
-        .color-box {
-            display: inline-block;
-            width: 15px;
-            height: 15px;
-            margin-right: 5px;
-            vertical-align: middle;
-        }
-        
-        .national-park {
-            background-color: #90EE90; /* Light green */
-        }
-        
-        .forest {
-            background-color: #006400; /* Dark green */
-        }
-        
-        .safari {
-            background-color: #F5DEB3; /* Beige */
-        }
-        
-        .community {
-            background-color: #8B4513; /* Dark brown */
-        }
-        
-        .resettlement {
-            background-color: #A52A2A; /* Brown */
-        }
-        
-        #map-info {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-        }
-        
-        #map-info ul {
-            list-style-type: none;
-            padding-left: 10px;
-        }
-        
-        #map-info li {
-            margin-bottom: 5px;
-        }
-        
-        /* Label styles - Important: Make sure these are applied properly */
-        .landuse-label {
-            background: none !important;
-            border: none !important;
-            box-shadow: none !important;
-            font-size: 12px !important;
-            font-weight: bold !important;
-            color: #333 !important;
-            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
-            pointer-events: none !important;
-            z-index: 1000 !important;
-        }
-        
-        .place-label {
-            background: none !important;
-            border: none !important;
-            box-shadow: none !important;
-            font-size: 11px !important;
-            font-weight: bold !important;
-            color: #000 !important;
-            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
-            pointer-events: none !important;
-            z-index: 1000 !important;
-        }
-        
-        /* Make sure tooltips appear above everything */
-        .leaflet-tooltip {
-            z-index: 1000 !important;
-        }
-        
-        /* Fix for positioning permanent tooltips */
-        .leaflet-tooltip-top:before,
-        .leaflet-tooltip-bottom:before,
-        .leaflet-tooltip-left:before,
-        .leaflet-tooltip-right:before {
-            display: none !important;
-        }
-    </style>
-    
-    <!-- Leaflet JavaScript -->
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
-            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
-            crossorigin=""></script>
-</head>
-<body>
-    <div class="container">
-        <h1>Hwange-Matetsi-Zambezi Area - Land Use Map</h1>
-        <div id="loading-indicator">Loading map data... Please wait.</div>
-        <div id="landuse-map"></div>
-        <div id="map-info">
-            <p>This map displays land use categories in the Hwange-Matetsi-Zambezi area with the following color scheme:</p>
-            <ul>
-                <li><span class="color-box national-park"></span> National Parks</li>
-                <li><span class="color-box forest"></span> Forest/State Forest</li>
-                <li><span class="color-box safari"></span> Safari Areas/Matetsi Units</li>
-                <li><span class="color-box community"></span> Community Conservation Areas</li>
-                <li><span class="color-box resettlement"></span> Resettlement Areas</li>
-            </ul>
-        </div>
-    </div>
-    
-    <!-- Custom JavaScript -->
-    <script>
-    // Simple debug function to log messages to console
-    function debug(message) {
-        console.log(`HMZ-WebGIS: ${message}`);
-    }
-
-    // Set up configuration 
-    const CONFIG = {
-        mapCenter: [-18.5, 26], // Hwange-Matetsi-Zambezi area
-        defaultZoom: 8,
-        maxZoom: 18,
-        minZoom: 5
-    };
-
-    // Store all layers
-    const allLayers = {};
-    const overlayLayers = {}; // For layer control
-
-    // Initialize the map when document is ready
-    document.addEventListener('DOMContentLoaded', function() {
-        debug("Document ready, initializing map...");
-        
-        // Add CSS for labels
-        const style = document.createElement('style');
-        style.innerHTML = `
-            .landuse-label {
-                background: none !important;
-                border: none !important;
-                box-shadow: none !important;
-                font-size: 12px !important;
-                font-weight: bold !important;
-                color: #333 !important;
-                text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
-                pointer-events: none !important;
-                z-index: 1000 !important;
-            }
-            .place-label {
-                background: none !important;
-                border: none !important;
-                box-shadow: none !important;
-                font-size: 11px !important;
-                font-weight: bold !important;
-                color: #000 !important;
-                text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
-                pointer-events: none !important;
-                z-index: 1000 !important;
-            }
-        `;
-        document.head.appendChild(style);
-        
-        initializeMap();
-    });
-
-    // Initialize the map and load layers
-    function initializeMap() {
-        debug("Creating map...");
-        
-        // Create the map with a global variable so we can access it elsewhere
-        window.map = L.map('landuse-map', {
-            center: [-18.86, 26.31], // Centered more on Hwange National Park
-            zoom: 9, // Closer zoom to focus on the area
-            maxZoom: CONFIG.maxZoom,
-            minZoom: CONFIG.minZoom
-        });
-        debug("Map created successfully");
-        
-        // Add base layers
-        debug("Setting up basemap layers...");
-        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-        }).addTo(window.map);
-        
-        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-        });
-        
-        const terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
-            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
-        });
-        
-        const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
-            maxZoom: 20,
-            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
-            attribution: '&copy; Google Maps'
-        });
-        
-        const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-            subdomains: 'abcd',
-            maxZoom: 20
-        });
-        
-        const baseLayers = {
-            "OpenStreetMap": osm,
-            "Satellite": satellite,
-            "Terrain": terrain,
-            "Google Terrain": googleTerrain,
-            "Carto Light": cartoLight
-        };
-        
-        // Load all GeoJSON layers
-        debug("Loading GeoJSON layers...");
-        Promise.all([
-            loadLandUseLayer(window.map),
-            loadCommunityCALayer(window.map),
-            loadMatetsiUnitsLayer(window.map),
-            loadLandscapeBoundaryLayer(window.map),
-            loadDistrictBoundariesLayer(window.map),
-            loadRiversLayer(window.map),
-            loadRoadsLayer(window.map),
-            loadPlacesLayer(window.map)
-        ])
-        .then(() => {
-            debug("All layers loaded successfully");
-            createLegend(window.map);
-            
-            // Set up layer control with overlays
-            L.control.layers(baseLayers, overlayLayers, {
-                collapsed: false
-            }).addTo(window.map);
-            
-            // Hide loading indicator if it exists
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.style.display = 'none';
-            }
-        })
-        .catch(error => {
-            console.error("Error loading layers:", error);
-            // Update loading indicator to show error if it exists
-            const loadingIndicator = document.getElementById('loading-indicator');
-            if (loadingIndicator) {
-                loadingIndicator.innerHTML = 
-                    `Error loading map data: ${error.message}. Check console for details.`;
-                loadingIndicator.style.color = 'red';
-            }
-        });
-        
-        // Add scale
-        L.control.scale({
-            imperial: false,
-            metric: true,
-            position: 'bottomleft'
-        }).addTo(window.map);
-        
-        debug("Map controls initialized");
-    }
-
-    // Function to load the land use layer
-    function loadLandUseLayer(map) {
-        return new Promise((resolve, reject) => {
-            fetch('data/landuse.geojson')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    debug("Land use data loaded successfully");
-                    
-                    // Add GeoJSON to map with styling and interactivity
-                    allLayers.landUse = L.geoJSON(data, {
-                        style: styleLandUse,
-                        onEachFeature: onEachLandUseFeature  // Use specific function for land use features
-                    }).addTo(map);
-                    
-                    // Add to overlay control
-                    overlayLayers["Land Use"] = allLayers.landUse;
-                    
-                    // Fit the map to the bounds of the GeoJSON layer
-                    map.fitBounds(allLayers.landUse.getBounds());
-                    
-                    resolve();
-                })
-                .catch(error => {
-                    console.error("Error loading land use data:", error);
-                    reject(error);
-                });
-        });
-    }
-
-    // Function to load the Community CA layer
-    function loadCommunityCALayer(map) {
-        return new Promise((resolve, reject) => {
-            fetch('data/communityCA.geojson')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    debug("Community CA data loaded successfully");
-                    
-                    // Add GeoJSON to map with styling and interactivity
-                    allLayers.communityCA = L.geoJSON(data, {
-                        style: styleCommunityCA,
-                        onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
-                    }).addTo(map);
-                    
-                    // Add to overlay control
-                    overlayLayers["Community Conservation Areas"] = allLayers.communityCA;
-                    
-                    resolve();
-                })
-                .catch(error => {
-                    console.error("Error loading Community CA data:", error);
-                    // Don't reject, just resolve with a warning to allow other layers to load
-                    resolve();
-                });
-        });
-    }
-
-    // Function to load the Matetsi Units layer
-    function loadMatetsiUnitsLayer(map) {
-        return new Promise((resolve, reject) => {
-            fetch('data/matetsiunits.geojson')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    debug("Matetsi Units data loaded successfully");
-                    
-                    // Add GeoJSON to map with styling and interactivity
-                    allLayers.matetsiUnits = L.geoJSON(data, {
-                        style: styleMatetsiUnits,
-                        onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
-                    }).addTo(map);
-                    
-                    // Add to overlay control
-                    overlayLayers["Matetsi Units"] = allLayers.matetsiUnits;
-                    
-                    resolve();
-                })
-                .catch(error => {
-                    console.error("Error loading Matetsi Units data:", error);
-                    // Don't reject, just resolve with a warning to allow other layers to load
-                    resolve();
-                });
-        });
-    }
-
-    // Function to load the Landscape Boundary layer
-    function loadLandscapeBoundaryLayer(map) {
-        return new Promise((resolve, reject) => {
-            fetch('data/landscapeboundary.geojson')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    debug("Landscape Boundary data loaded successfully");
-                    
-                    // Add GeoJSON to map with styling and interactivity
-                    allLayers.landscapeBoundary = L.geoJSON(data, {
-                        style: {
-                            color: '#FF0000', // Changed to red color
-                            weight: 4, // Thicker line (increased from 2)
-                            opacity: 1,
-                            fillOpacity: 0
-                        },
-                        onEachFeature: function(feature, layer) {
-                            // Only add popup, no mouseover effects
-                            if (feature.properties) {
-                                let popupContent = '<div class="popup-content">';
-                                
-                                for (const prop in feature.properties) {
-                                    const value = feature.properties[prop];
-                                    if (value !== null && value !== undefined && value !== '') {
-                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
-                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
-                                    }
-                                }
-                                
-                                popupContent += '</div>';
-                                layer.bindPopup(popupContent);
-                                
-                                // Add river name as label if available
-                                let name = feature.properties.name || feature.properties.Name || 
-                                        feature.properties.NAME || '';
-                                if (name) {
-                                    layer.bindTooltip(name, {
-                                        permanent: true,
-                                        direction: 'center',
-                                        className: 'place-label'
-                                    });
-                                }
-                            }
-                            
-                            // Only add click handler for zooming
-                            layer.on({
-                                click: zoomToFeature
-                            });
-                        }
-                    });
-                    
-                    // Add to overlay control but don't add to map by default
-                    overlayLayers["Rivers"] = allLayers.rivers;
-                    
-                    resolve();
-                })
-                .catch(error => {
-                    console.error("Error loading Rivers data:", error);
-                    resolve();
-                });
-        });
-    }
-
-    // Function to load the Roads layer
-    function loadRoadsLayer(map) {
-        return new Promise((resolve, reject) => {
-            fetch('data/roads.geojson')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    debug("Roads data loaded successfully");
-                    
-                    // Add GeoJSON to map with styling and interactivity
-                    allLayers.roads = L.geoJSON(data, {
-                        style: {
-                            color: '#8B4513', // Brown color
-                            weight: 1.5,
-                            opacity: 0.6 // Changed from 0.4 to 0.6 (60%)
-                        },
-                        onEachFeature: function(feature, layer) {
-                            // Only add popup, no mouseover effects
-                            if (feature.properties) {
-                                let popupContent = '<div class="popup-content">';
-                                
-                                for (const prop in feature.properties) {
-                                    const value = feature.properties[prop];
-                                    if (value !== null && value !== undefined && value !== '') {
-                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
-                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
-                                    }
-                                }
-                                
-                                popupContent += '</div>';
-                                layer.bindPopup(popupContent);
-                            }
-                            
-                            // Only add click handler for zooming
-                            layer.on({
-                                click: zoomToFeature
-                            });
-                        }
-                    });
-                    
-                    // Add to overlay control but don't add to map by default
-                    overlayLayers["Roads"] = allLayers.roads;
-                    
-                    resolve();
-                })
-                .catch(error => {
-                    console.error("Error loading Roads data:", error);
-                    resolve();
-                });
-        });
-    }
-
-    // Function to load the Places layer
-    function loadPlacesLayer(map) {
-        return new Promise((resolve, reject) => {
-            fetch('data/places.geojson')
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error(`HTTP error! Status: ${response.status}`);
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    debug("Places data loaded successfully");
-                    
-                    // Add GeoJSON to map with point markers
-                    allLayers.places = L.geoJSON(data, {
-                        pointToLayer: function(feature, latlng) {
-                            return L.circleMarker(latlng, {
-                                radius: 4, // Increased from 2 to 4 to make more visible
-                                fillColor: "#FFA500",
-                                color: "#000",
-                                weight: 1,
-                                opacity: 1,
-                                fillOpacity: 0.8
-                            });
-                        },
-                        onEachFeature: function(feature, layer) {
-                            // Only add popup, no mouseover effects
-                            if (feature.properties) {
-                                let popupContent = '<div class="popup-content">';
-                                
-                                for (const prop in feature.properties) {
-                                    const value = feature.properties[prop];
-                                    if (value !== null && value !== undefined && value !== '') {
-                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
-                                    }
-                                }
-                                
-                                popupContent += '</div>';
-                                layer.bindPopup(popupContent);
-                                
-                                // Add label for places
-                                let name = feature.properties.name || feature.properties.Name || 
-                                          feature.properties.NAME || feature.properties.title || 
-                                          feature.properties.TITLE || '';
-                                if (name) {
-                                    layer.bindTooltip(name, {
-                                        permanent: true,
-                                        direction: 'right',
-                                        offset: [10, 0], // Add offset to prevent overlap with marker
-                                        className: 'place-label'
-                                    });
-                                }
-                            }
-                        }
-                    });
-                    
-                    // Add to overlay control but don't add to map by default
-                    overlayLayers["Places"] = allLayers.places;
-                    
-                    resolve();
-                })
-                .catch(error => {
-                    console.error("Error loading Places data:", error);
-                    resolve();
-                });
-        });
-    }
-
-    // Helper function to find the designation property
+        // Helper function to find the designation property
     function findDesignationProperty(properties) {
         // Check for common property names that might contain designation information
         // Listed in order of preference
@@ -868,7 +244,7 @@
         window.map.fitBounds(e.target.getBounds());
     }
 
-    // Create a legend for the map
+    // Create a legend for the map - UPDATED WITH NEW LAYERS
     function createLegend(map) {
         try {
             const legend = L.control({ position: 'bottomright' });
@@ -879,19 +255,23 @@
                     { name: 'National Park', value: 'national park' },
                     { name: 'Forest/State Forest', value: 'forest' },
                     { name: 'Safari Area', value: 'safari' },
-                    { name: 'Community Conservation', value: '8B4513', isHex: true },
-                    { name: 'Resettlement Area', value: '' }
+                    { name: 'Community Conservation', value: 'community' },
+                    { name: 'Resettlement Area', value: '' },
+                    { name: 'Water Sources', color: '#0000FF' },
+                    { name: 'Project Sites', color: '#FF6600' },
+                    { name: 'Buffer Wards', color: '#FFFF99' },
+                    { name: 'Elephant Movement - Low', color: '#FFA500' },
+                    { name: 'Elephant Movement - Medium', color: '#FF0000' },
+                    { name: 'Elephant Movement - High', color: '#800080' }
                 ];
                 
-                div.innerHTML = '<h4>Land Designation</h4>';
+                div.innerHTML = '<h4>Legend</h4>';
                 
                 // Loop through our categories and generate a label with a colored square for each
                 for (let i = 0; i < categories.length; i++) {
-                    const color = categories[i].isHex ? 
-                                  categories[i].value : 
-                                  getColor(categories[i].value);
+                    const color = categories[i].color || getColor(categories[i].value);
                     div.innerHTML +=
-                        '<i style="background:' + (categories[i].isHex ? '#' + categories[i].value : color) + '"></i> ' +
+                        '<i style="background:' + color + '"></i> ' +
                         categories[i].name + '<br>';
                 }
                 
@@ -908,6 +288,811 @@
     </script>
 </body>
 </html>
+        
+        .container {
+            padding: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 15px;
+        }
+        
+        /* Map container - KEEP THE ID AS landuse-map to match the JS */
+        #landuse-map {
+            height: 80vh;
+            width: 100%;
+            border: 1px solid #ccc;
+            position: relative;
+            z-index: 1; /* Ensure map is below tooltips/popups */
+        }
+        
+        /* Loading indicator */
+        #loading-indicator {
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+            margin-bottom: 10px;
+            text-align: center;
+            font-weight: bold;
+            color: #666;
+        }
+        
+        /* Info box styles */
+        .info {
+            padding: 6px 8px;
+            font: 14px/16px Arial, Helvetica, sans-serif;
+            background: white;
+            background: rgba(255, 255, 255, 0.8);
+            box-shadow: 0 0 15px rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+        }
+        
+        .info h4 {
+            margin: 0 0 5px;
+            color: #333;
+        }
+        
+        .legend {
+            line-height: 18px;
+            color: #555;
+        }
+        
+        .legend i {
+            width: 18px;
+            height: 18px;
+            float: left;
+            margin-right: 8px;
+            opacity: 0.7;
+        }
+        
+        /* Popup styles */
+        .popup-content {
+            padding: 10px;
+            font-size: 14px;
+        }
+        
+        .popup-content strong {
+            color: #333;
+        }
+        
+        /* Error message */
+        .error-message {
+            color: red;
+            text-align: center;
+            padding: 20px;
+            font-weight: bold;
+        }
+        
+        /* Land use colors */
+        .color-box {
+            display: inline-block;
+            width: 15px;
+            height: 15px;
+            margin-right: 5px;
+            vertical-align: middle;
+        }
+        
+        .national-park {
+            background-color: #90EE90; /* Light green */
+        }
+        
+        .forest {
+            background-color: #006400; /* Dark green */
+        }
+        
+        .safari {
+            background-color: #F5DEB3; /* Beige */
+        }
+        
+        .community {
+            background-color: #8B4513; /* Dark brown */
+        }
+        
+        .resettlement {
+            background-color: #A52A2A; /* Brown */
+        }
+        
+        /* New layer colors */
+        .water-sources {
+            background-color: #0000FF; /* Blue */
+        }
+        
+        .project-sites {
+            background-color: #FF6600; /* Orange */
+        }
+        
+        .buffer-wards {
+            background-color: #FFFF99; /* Light yellow */
+        }
+        
+        .elephant-low {
+            background-color: #FFA500; /* Orange for low intensity */
+        }
+        
+        .elephant-medium {
+            background-color: #FF0000; /* Red for medium intensity */
+        }
+        
+        .elephant-high {
+            background-color: #800080; /* Purple for high intensity */
+        }
+        
+        #map-info {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+        
+        #map-info ul {
+            list-style-type: none;
+            padding-left: 10px;
+        }
+        
+        #map-info li {
+            margin-bottom: 5px;
+        }
+        
+        /* Label styles - Important: Make sure these are applied properly */
+        .landuse-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            color: #333 !important;
+            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+            pointer-events: none !important;
+            z-index: 1000 !important;
+        }
+        
+        .place-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            color: #000 !important;
+            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+            pointer-events: none !important;
+            z-index: 1000 !important;
+        }
+        
+        /* Make sure tooltips appear above everything */
+        .leaflet-tooltip {
+            z-index: 1000 !important;
+        }
+        
+        /* Fix for positioning permanent tooltips */
+        .leaflet-tooltip-top:before,
+        .leaflet-tooltip-bottom:before,
+        .leaflet-tooltip-left:before,
+        .leaflet-tooltip-right:before {
+            display: none !important;
+        }
+    </style>
+    
+    <!-- Leaflet JavaScript -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+            integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" 
+            crossorigin=""></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Hwange-Matetsi-Zambezi Area - Land Use Map</h1>
+        <div id="loading-indicator">Loading map data... Please wait.</div>
+        <div id="landuse-map"></div>
+        <div id="map-info">
+            <p>This map displays land use categories and additional layers in the Hwange-Matetsi-Zambezi area with the following color scheme:</p>
+            <ul>
+                <li><span class="color-box national-park"></span> National Parks</li>
+                <li><span class="color-box forest"></span> Forest/State Forest</li>
+                <li><span class="color-box safari"></span> Safari Areas/Matetsi Units</li>
+                <li><span class="color-box community"></span> Community Conservation Areas</li>
+                <li><span class="color-box resettlement"></span> Resettlement Areas</li>
+                <li><span class="color-box water-sources"></span> Water Sources</li>
+                <li><span class="color-box project-sites"></span> Project Sites</li>
+                <li><span class="color-box buffer-wards"></span> Buffer Wards</li>
+                <li><span class="color-box elephant-low"></span> Elephant Movement - Low</li>
+                <li><span class="color-box elephant-medium"></span> Elephant Movement - Medium</li>
+                <li><span class="color-box elephant-high"></span> Elephant Movement - High</li>
+            </ul>
+        </div>
+    </div>
+    
+    <!-- Custom JavaScript -->
+    <script>
+    // Simple debug function to log messages to console
+    function debug(message) {
+        console.log(`HMZ-WebGIS: ${message}`);
+    }
+
+    // Set up configuration 
+    const CONFIG = {
+        mapCenter: [-18.5, 26], // Hwange-Matetsi-Zambezi area
+        defaultZoom: 8,
+        maxZoom: 18,
+        minZoom: 5
+    };
+
+    // Store all layers
+    const allLayers = {};
+    const overlayLayers = {}; // For layer control
+
+    // Initialize the map when document is ready
+    document.addEventListener('DOMContentLoaded', function() {
+        debug("Document ready, initializing map...");
+        
+        // Add CSS for labels
+        const style = document.createElement('style');
+        style.innerHTML = `
+            .landuse-label {
+                background: none !important;
+                border: none !important;
+                box-shadow: none !important;
+                font-size: 12px !important;
+                font-weight: bold !important;
+                color: #333 !important;
+                text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+                pointer-events: none !important;
+                z-index: 1000 !important;
+            }
+            .place-label {
+                background: none !important;
+                border: none !important;
+                box-shadow: none !important;
+                font-size: 11px !important;
+                font-weight: bold !important;
+                color: #000 !important;
+                text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+                pointer-events: none !important;
+                z-index: 1000 !important;
+            }
+        `;
+        document.head.appendChild(style);
+        
+        initializeMap();
+    });
+
+    // Initialize the map and load layers
+    function initializeMap() {
+        debug("Creating map...");
+        
+        // Create the map with a global variable so we can access it elsewhere
+        window.map = L.map('landuse-map', {
+            center: [-18.86, 26.31], // Centered more on Hwange National Park
+            zoom: 9, // Closer zoom to focus on the area
+            maxZoom: CONFIG.maxZoom,
+            minZoom: CONFIG.minZoom
+        });
+        debug("Map created successfully");
+        
+        // Add base layers
+        debug("Setting up basemap layers...");
+        const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(window.map);
+        
+        const satellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+        });
+        
+        const terrain = L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+            attribution: 'Map data: &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+        });
+        
+        const googleTerrain = L.tileLayer('https://{s}.google.com/vt/lyrs=p&x={x}&y={y}&z={z}', {
+            maxZoom: 20,
+            subdomains: ['mt0', 'mt1', 'mt2', 'mt3'],
+            attribution: '&copy; Google Maps'
+        });
+        
+        const cartoLight = L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            subdomains: 'abcd',
+            maxZoom: 20
+        });
+        
+        const baseLayers = {
+            "OpenStreetMap": osm,
+            "Satellite": satellite,
+            "Terrain": terrain,
+            "Google Terrain": googleTerrain,
+            "Carto Light": cartoLight
+        };
+        
+        // Load all GeoJSON layers - INCLUDING NEW ONES
+        debug("Loading GeoJSON layers...");
+        Promise.all([
+            loadLandUseLayer(window.map),
+            loadCommunityCALayer(window.map),
+            loadMatetsiUnitsLayer(window.map),
+            loadLandscapeBoundaryLayer(window.map),
+            loadDistrictBoundariesLayer(window.map),
+            loadRiversLayer(window.map),
+            loadRoadsLayer(window.map),
+            loadPlacesLayer(window.map),
+            // NEW LAYER FUNCTIONS
+
+    // Function to load the Water Sources layer
+    function loadWaterSourcesLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/watersources.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Water Sources data loaded successfully");
+
+                    // Add GeoJSON to map with point markers
+                    allLayers.waterSources = L.geoJSON(data, {
+                        pointToLayer: function(feature, latlng) {
+                            return L.circleMarker(latlng, {
+                                radius: 6,
+                                fillColor: "#0000FF", // Blue color for water
+                                color: "#0066CC", // Darker blue border
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            });
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    });
+
+                    // Add to overlay control
+                    overlayLayers["Water Sources"] = allLayers.waterSources;
+
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Water Sources data:", error);
+                    resolve();
+                });
+        });
+    }
+
+    // Function to load the Project Sites layer
+    function loadProjectSitesLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/projectsites.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Project Sites data loaded successfully");
+
+                    // Add GeoJSON to map with point markers
+                    allLayers.projectSites = L.geoJSON(data, {
+                        pointToLayer: function(feature, latlng) {
+                            return L.circleMarker(latlng, {
+                                radius: 8,
+                                fillColor: "#FF6600", // Orange color for project sites
+                                color: "#CC5500", // Darker orange border
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            });
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+
+                                // Add label if name exists
+                                let name = feature.properties.name || feature.properties.Name ||
+                                            feature.properties.NAME || feature.properties.site_name ||
+                                            feature.properties.project_name || '';
+
+                                if (name) {
+                                    layer.bindTooltip(name, {
+                                        permanent: false,
+                                        direction: 'top',
+                                        offset: [0, -10],
+                                        className: 'place-label'
+                                    });
+                                }
+                            }
+
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    });
+
+                    // Add to overlay control
+                    overlayLayers["Project Sites"] = allLayers.projectSites;
+
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Project Sites data:", error);
+                    resolve();
+                });
+        });
+    }
+
+    // Function to load the Buffer Wards layer
+    function loadBufferWardsLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/bufferwards.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Buffer Wards data loaded successfully");
+
+                    // Add GeoJSON to map with styling
+                    allLayers.bufferWards = L.geoJSON(data, {
+                        style: {
+                            fillColor: '#FFFF99', // Light yellow for buffer zones
+                            weight: 2,
+                            opacity: 1,
+                            color: '#CCCC00', // Darker yellow border
+                            dashArray: '10, 5',
+                            fillOpacity: 0.4
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+
+                                // Add ward name as label
+                                let name = feature.properties.name || feature.properties.Name ||
+                                            feature.properties.NAME || feature.properties.ward_name ||
+                                            feature.properties.Ward || '';
+                                if (name) {
+                                    layer.bindTooltip(name, {
+                                        permanent: true,
+                                        direction: 'center',
+                                        className: 'landuse-label'
+                                    });
+                                }
+                            }
+
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    });
+
+                    // Add to overlay control
+                    overlayLayers["Buffer Wards"] = allLayers.bufferWards;
+
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Buffer Wards data:", error);
+                    resolve();
+                });
+        });
+    }
+
+    // Function to load the Elephant Movement layer with contour-based coloring
+    function loadElephantMovementLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/elephantmovement.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Elephant Movement data loaded successfully");
+
+                    // Function to get color based on contour value
+                    function getElephantMovementColor(contour) {
+                        if (!contour) return '#999999'; // Default gray
+                        
+                        const contourStr = String(contour).toLowerCase();
+                        
+                        if (contourStr.includes('low') || contourStr === '1' || contourStr === 'l') {
+                            return '#FFA500'; // Orange for low
+                        } else if (contourStr.includes('medium') || contourStr === '2' || contourStr === 'm') {
+                            return '#FF0000'; // Red for medium
+                        } else if (contourStr.includes('high') || contourStr === '3' || contourStr === 'h') {
+                            return '#800080'; // Purple for high
+                        }
+                        
+                        // Try to parse as number
+                        const num = parseFloat(contour);
+                        if (!isNaN(num)) {
+                            if (num <= 1) return '#FFA500'; // Orange for low values
+                            else if (num <= 2) return '#FF0000'; // Red for medium values
+                            else return '#800080'; // Purple for high values
+                        }
+                        
+                        return '#999999'; // Default gray
+                    }
+
+                    // Add GeoJSON to map with contour-based styling
+                    allLayers.elephantMovement = L.geoJSON(data, {
+                        style: function(feature) {
+                            const contour = feature.properties.contour || feature.properties.Contour ||
+                                           feature.properties.CONTOUR || feature.properties.level ||
+                                           feature.properties.intensity || feature.properties.density;
+                            
+                            return {
+                                fillColor: getElephantMovementColor(contour),
+                                weight: 1,
+                                opacity: 1,
+                                color: '#333',
+                                fillOpacity: 0.7
+                            };
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+                                
+                                // Highlight the contour property
+                                const contour = feature.properties.contour || feature.properties.Contour ||
+                                               feature.properties.CONTOUR || feature.properties.level ||
+                                               feature.properties.intensity || feature.properties.density;
+                                
+                                if (contour) {
+                                    popupContent += `<strong>Movement Intensity:</strong> ${contour}<br>`;
+                                }
+
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                        if (prop === 'contour' || prop === 'Contour' || prop === 'CONTOUR') continue; // Already shown above
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    });
+
+                    // Add to overlay control
+                    overlayLayers["Elephant Movement"] = allLayers.elephantMovement;
+
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Elephant Movement data:", error);
+                    resolve();
+                });
+        });
+    }S ADDED HERE
+            loadWaterSourcesLayer(window.map),
+            loadProjectSitesLayer(window.map),
+            loadBufferWardsLayer(window.map),
+            loadElephantMovementLayer(window.map)
+        ])
+        .then(() => {
+            debug("All layers loaded successfully");
+            createLegend(window.map);
+            
+            // Set up layer control with overlays
+            L.control.layers(baseLayers, overlayLayers, {
+                collapsed: false
+            }).addTo(window.map);
+            
+            // Hide loading indicator if it exists
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.style.display = 'none';
+            }
+        })
+        .catch(error => {
+            console.error("Error loading layers:", error);
+            // Update loading indicator to show error if it exists
+            const loadingIndicator = document.getElementById('loading-indicator');
+            if (loadingIndicator) {
+                loadingIndicator.innerHTML = 
+                    `Error loading map data: ${error.message}. Check console for details.`;
+                loadingIndicator.style.color = 'red';
+            }
+        });
+        
+        // Add scale
+        L.control.scale({
+            imperial: false,
+            metric: true,
+            position: 'bottomleft'
+        }).addTo(window.map);
+        
+        debug("Map controls initialized");
+    }
+
+    // Function to load the land use layer
+    function loadLandUseLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/landuse.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Land use data loaded successfully");
+                    
+                    // Add GeoJSON to map with styling and interactivity
+                    allLayers.landUse = L.geoJSON(data, {
+                        style: styleLandUse,
+                        onEachFeature: onEachLandUseFeature  // Use specific function for land use features
+                    }).addTo(map);
+                    
+                    // Add to overlay control
+                    overlayLayers["Land Use"] = allLayers.landUse;
+                    
+                    // Fit the map to the bounds of the GeoJSON layer
+                    map.fitBounds(allLayers.landUse.getBounds());
+                    
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading land use data:", error);
+                    reject(error);
+                });
+        });
+    }
+
+    // Function to load the Community CA layer
+    function loadCommunityCALayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/communityCA.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Community CA data loaded successfully");
+                    
+                    // Add GeoJSON to map with styling and interactivity
+                    allLayers.communityCA = L.geoJSON(data, {
+                        style: {
+                            fillColor: '#D2B48C', // Light brown as requested
+                            weight: 1,
+                            opacity: 1,
+                            color: '#666',
+                            dashArray: '',
+                            fillOpacity: 0.6
+                        },
+                        onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
+                    }).addTo(map);
+                    
+                    // Add to overlay control
+                    overlayLayers["Community Conservation Areas"] = allLayers.communityCA;
+                    
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Community CA data:", error);
+                    // Don't reject, just resolve with a warning to allow other layers to load
+                    resolve();
+                });
+        });
+    }
+
+    // Function to load the Matetsi Units layer
+    function loadMatetsiUnitsLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/matetsiunits.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Matetsi Units data loaded successfully");
+                    
+                    // Add GeoJSON to map with styling and interactivity
+                    allLayers.matetsiUnits = L.geoJSON(data, {
+                        style: styleMatetsiUnits,
+                        onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
+                    }).addTo(map);
+                    
+                    // Add to overlay control
+                    overlayLayers["Matetsi Units"] = allLayers.matetsiUnits;
+                    
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Matetsi Units data:", error);
+                    // Don't reject, just resolve with a warning to allow other layers to load
+                    resolve();
+                });
+        });
+    }
+
+    // Function to load the Landscape Boundary layer
+    function loadLandscapeBoundaryLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/landscapeboundary.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Landscape Boundary data loaded successfully");
+                    
+                    // Add GeoJSON to map with styling and interactivity
+                    allLayers.landscapeBoundary = L.geoJSON(data, {
+                        style: {
+                            color: '#FF0000', // Changed to red color
+                            weight: 4, // Thicker line (increased from 2)
+                            opacity: 1,
+                            fillOpacity: 0
+                        },
+                        onEachFeature: function(feature, layer) {
+                            // Only add popup, no mouseover effects
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+                                
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+                                
+                                popupContent += '</div>';
                                 layer.bindPopup(popupContent);
                             }
                             
@@ -1033,4 +1218,151 @@
                                     }
                                 }
                                 
-                                popup
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+                            
+                            // Only add click handler for zooming
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    });
+                    
+                    // Add to overlay control but don't add to map by default
+                    overlayLayers["Rivers"] = allLayers.rivers;
+                    
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Rivers data:", error);
+                    resolve();
+                });
+        });
+    }
+
+    // Function to load the Roads layer
+    function loadRoadsLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/roads.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Roads data loaded successfully");
+                    
+                    // Add GeoJSON to map with styling and interactivity
+                    allLayers.roads = L.geoJSON(data, {
+                        style: {
+                            color: '#8B4513', // Brown color
+                            weight: 1.5,
+                            opacity: 0.6 // Changed from 0.4 to 0.6 (60%)
+                        },
+                        onEachFeature: function(feature, layer) {
+                            // Only add popup, no mouseover effects
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+                                
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+                                
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+                            
+                            // Only add click handler for zooming
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    });
+                    
+                    // Add to overlay control but don't add to map by default
+                    overlayLayers["Roads"] = allLayers.roads;
+                    
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Roads data:", error);
+                    resolve();
+                });
+        });
+    }
+
+    // Function to load the Places layer
+    function loadPlacesLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/places.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Places data loaded successfully");
+                    
+                    // Add GeoJSON to map with point markers
+                    allLayers.places = L.geoJSON(data, {
+                        pointToLayer: function(feature, latlng) {
+                            return L.circleMarker(latlng, {
+                                radius: 4, // Increased from 2 to 4 to make more visible
+                                fillColor: "#FFA500",
+                                color: "#000",
+                                weight: 1,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            });
+                        },
+                        onEachFeature: function(feature, layer) {
+                            // Only add popup, no mouseover effects
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+                                
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+                                
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                                
+                                // Add label for places
+                                let name = feature.properties.name || feature.properties.Name || 
+                                          feature.properties.NAME || feature.properties.title || 
+                                          feature.properties.TITLE || '';
+                                if (name) {
+                                    layer.bindTooltip(name, {
+                                        permanent: true,
+                                        direction: 'right',
+                                        offset: [10, 0], // Add offset to prevent overlap with marker
+                                        className: 'place-label'
+                                    });
+                                }
+                            }
+                        }
+                    });
+                    
+                    // Add to overlay control but don't add to map by default
+                    overlayLayers["Places"] = allLayers.places;
+                    
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Places data:", error);
+                    resolve();
+                });
+        });
+    }
+
+    // NEW LAYER

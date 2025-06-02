@@ -19,7 +19,7 @@ const overlayLayers = {}; // For layer control
 document.addEventListener('DOMContentLoaded', function() {
     debug("Document ready, initializing map...");
 
-    // Add CSS for labels
+    // Add CSS for labels - INCLUDING INTERSECTED LAYER LABELS
     const style = document.createElement('style');
     style.innerHTML = `
         .landuse-label {
@@ -49,6 +49,16 @@ document.addEventListener('DOMContentLoaded', function() {
             font-size: 11px !important;
             font-weight: bold !important;
             color: #FF8C00 !important;
+            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+            pointer-events: none !important;
+        }
+        .intersected-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            color: #333 !important;
             text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
             pointer-events: none !important;
         }
@@ -105,18 +115,18 @@ function initializeMap() {
         "Carto Light": cartoLight
     };
 
-    // Load all GeoJSON layers - REMOVED FORESTS LAYER
+    // Load all GeoJSON layers - REPLACED FORESTS WITH INTERSECTED LAYER
     debug("Loading GeoJSON layers...");
     Promise.all([
         loadLandUseLayer(window.map),
         loadCommunityCALayer(window.map),
         loadMatetsiUnitsLayer(window.map),
+        loadIntersectedLayer(window.map), // NEW: Added intersected layer to replace forests
         loadLandscapeBoundaryLayer(window.map),
         loadDistrictBoundariesLayer(window.map),
         loadRiversLayer(window.map),
         loadRoadsLayer(window.map),
         loadPlacesLayer(window.map),
-        // REMOVED: loadForestsLayer(window.map), - forests.geojson file doesn't exist
         // Add new layers
         loadWaterSourcesLayer(window.map),
         loadProjectSitesLayer(window.map),
@@ -315,6 +325,38 @@ function loadMatetsiUnitsLayer(map) {
             })
             .catch(error => {
                 console.error("Error loading Matetsi Units data:", error);
+                // Don't reject, just resolve with a warning to allow other layers to load
+                resolve();
+            });
+    });
+}
+
+// NEW: Function to load the Intersected layer (replaces forests layer)
+function loadIntersectedLayer(map) {
+    return new Promise((resolve, reject) => {
+        fetch('data/intersected.geojson')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                debug("Intersected data loaded successfully");
+
+                // Add GeoJSON to map with landtype-based styling
+                allLayers.intersected = L.geoJSON(data, {
+                    style: styleIntersected,
+                    onEachFeature: onEachIntersectedFeature   // Use specific function for intersected features with labeling
+                }).addTo(map);
+
+                // Add to overlay control
+                overlayLayers["Land Types"] = allLayers.intersected;
+
+                resolve();
+            })
+            .catch(error => {
+                console.error("Error loading Intersected data:", error);
                 // Don't reject, just resolve with a warning to allow other layers to load
                 resolve();
             });
@@ -956,6 +998,23 @@ function findDesignationProperty(properties) {
     return 'Unknown';
 }
 
+// Helper function to find the landtype property for intersected layer
+function findLandTypeProperty(properties) {
+    // Check for common property names that might contain landtype information
+    const possibleProps = [
+        'landtype', 'land_type', 'LANDTYPE', 'LAND_TYPE', 'type', 'Type', 'TYPE',
+        'class', 'Class', 'CLASS', 'category', 'Category', 'CATEGORY'
+    ];
+
+    for (const prop of possibleProps) {
+        if (properties[prop] !== undefined && properties[prop] !== null && properties[prop] !== '') {
+            return properties[prop];
+        }
+    }
+
+    return 'Unknown';
+}
+
 // Function to determine color based on the designation
 function getColor(designation) {
     // Default color for Unknown/Resettlement Areas is brown
@@ -995,6 +1054,40 @@ function getColor(designation) {
     return color;
 }
 
+// NEW: Function to determine color based on landtype for intersected layer
+function getLandTypeColor(landtype) {
+    // Default color for unknown landtype
+    let color = '#CCCCCC'; // Light gray for unknown
+
+    // If no landtype provided, return gray (default)
+    if (!landtype) return color;
+
+    // Convert landtype to lowercase for case-insensitive comparison
+    const type = String(landtype).toLowerCase();
+
+    // Debug the landtype
+    debug(`Checking landtype: "${type}"`);
+
+    // Assign colors based on landtype
+    if (type.includes('forest') || type.includes('woodland') || type.includes('tree')) {
+        color = '#006400'; // Dark green for forest land
+        debug(`  Matched as Forest Land: ${color}`);
+    } else if (type.includes('large scale') || type.includes('commercial') || 
+               type.includes('farming') || type.includes('agriculture') ||
+               type.includes('crop') || type.includes('plantation')) {
+        color = '#808080'; // Grey color for large scale commercial farming
+        debug(`  Matched as Large Scale Commercial Farming: ${color}`);
+    } else if (type.includes('communal') || type.includes('community') ||
+               type.includes('smallholder') || type.includes('subsistence')) {
+        color = '#D2B48C'; // Same color as community conservation areas
+        debug(`  Matched as Communal Land: ${color}`);
+    } else {
+        debug(`  No match - using default gray: ${color}`);
+    }
+
+    return color;
+}
+
 // Style function for Land Use GeoJSON features
 function styleLandUse(feature) {
     // Find the designation property
@@ -1002,6 +1095,24 @@ function styleLandUse(feature) {
 
     // Get color based on designation
     const color = getColor(designation);
+
+    return {
+        fillColor: color,
+        weight: 1,
+        opacity: 1,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    };
+}
+
+// NEW: Style function for Intersected layer features
+function styleIntersected(feature) {
+    // Find the landtype property
+    const landtype = findLandTypeProperty(feature.properties);
+
+    // Get color based on landtype
+    const color = getLandTypeColor(landtype);
 
     return {
         fillColor: color,
@@ -1121,6 +1232,92 @@ function onEachLandUseFeature(feature, layer) {
     });
 }
 
+// NEW: Specific function for intersected features with labeling
+function onEachIntersectedFeature(feature, layer) {
+    // Create a popup with feature information
+    if (feature.properties) {
+        // Find the most likely name and landtype properties
+        const landtype = findLandTypeProperty(feature.properties);
+        let name = feature.properties.name || feature.properties.Name ||
+                    feature.properties.NAME || feature.properties.title ||
+                    feature.properties.TITLE || feature.properties.area_name ||
+                    feature.properties.AREA_NAME || '';
+
+        let popupContent = '<div class="popup-content">';
+
+        // Add landtype if available
+        if (landtype) {
+            // Clean up landtype display
+            const displayLandtype = landtype === 'Unknown' ? 'Unclassified Land' : landtype;
+            popupContent += `<strong>Land Type:</strong> ${displayLandtype}<br>`;
+        }
+
+        // Add name if available
+        if (name) {
+            popupContent += `<strong>Name:</strong> ${name}<br>`;
+        }
+
+        // Add all other properties that might be useful
+        for (const prop in feature.properties) {
+            // Skip properties we've already included or that are empty
+            if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+            if (prop === 'name' || prop === 'Name' || prop === 'NAME' ||
+                prop === 'landtype' || prop === 'land_type' || prop === 'LANDTYPE' || 
+                prop === 'LAND_TYPE' || prop === 'type' || prop === 'Type' || prop === 'TYPE') continue;
+
+            const value = feature.properties[prop];
+            if (value !== null && value !== undefined && value !== '') {
+                popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+            }
+        }
+
+        // Close the popup content div
+        popupContent += '</div>';
+
+        // Bind popup to layer
+        layer.bindPopup(popupContent);
+
+        // Add label for intersected features - ENSURE THIS WORKS BY MAKING LABEL PERMANENT
+        if (name) {
+            // Use a timeout to ensure labels are applied after the map is fully loaded
+            setTimeout(() => {
+                try {
+                    // Get centroid for better label placement
+                    let centroid;
+                    if (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon") {
+                        // For polygons, use the layer's getBounds method to find the center
+                        const bounds = layer.getBounds();
+                        centroid = bounds.getCenter();
+                    } else {
+                        // For other geometries, just use the layer's coordinates
+                        centroid = layer.getLatLng();
+                    }
+
+                    // Create a marker at the centroid with the label
+                    const labelMarker = L.marker(centroid, {
+                        icon: L.divIcon({
+                            html: name,
+                            className: 'intersected-label',
+                            iconSize: [100, 20],
+                            iconAnchor: [50, 10]
+                        })
+                    }).addTo(window.map);
+
+                    // Store the label marker reference to allow toggling it with the layer
+                    layer.labelMarker = labelMarker;
+                } catch (e) {
+                    console.error("Error adding intersected label:", e);
+                }
+            }, 600); // Slightly delayed to avoid conflicts with other labels
+        }
+    }
+
+    // Only add click handler for zooming, no mouseover effects
+    layer.on({
+        click: zoomToFeature
+    });
+}
+
 // Function to add interactivity to general features (without labels)
 function onEachFeature(feature, layer) {
     // Create a popup with feature information
@@ -1156,7 +1353,7 @@ function zoomToFeature(e) {
     window.map.fitBounds(e.target.getBounds());
 }
 
-// Create legend function (UPDATED - REMOVED FORESTS)
+// Create legend function (UPDATED - REPLACED FORESTS WITH LAND TYPES)
 function createLegend(map) {
     const legend = L.control({ position: 'bottomright' });
 
@@ -1164,9 +1361,11 @@ function createLegend(map) {
         const div = L.DomUtil.create('div', 'info legend');
         const designations = [
             { name: 'National Park', color: '#90EE90' },
-            { name: 'Forest Area', color: '#006400' },
+            { name: 'Forest Land', color: '#006400' },
             { name: 'Safari Area', color: '#F5DEB3' },
             { name: 'Community Conservation Area', color: '#D2B48C' },
+            { name: 'Large Scale Commercial Farming', color: '#808080' },
+            { name: 'Communal Land', color: '#D2B48C' },
             { name: 'Resettlement Area/Unknown', color: '#A52A2A' },
             { name: 'Water Sources', color: '#0000FF' },
             { name: 'Project Sites', color: '#FF6600' },

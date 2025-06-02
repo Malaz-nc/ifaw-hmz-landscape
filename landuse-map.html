@@ -137,6 +137,10 @@
             background-color: #FFFF99; /* Light yellow */
         }
         
+        .matetsi-units {
+            background-color: #FF8C00; /* Dark orange for linestrings */
+        }
+        
         .elephant-low {
             background-color: #FFA500; /* Orange for low intensity */
         }
@@ -219,9 +223,10 @@
             <ul>
                 <li><span class="color-box national-park"></span> National Parks</li>
                 <li><span class="color-box forest"></span> Forest/State Forest</li>
-                <li><span class="color-box safari"></span> Safari Areas/Matetsi Units</li>
+                <li><span class="color-box safari"></span> Safari Areas</li>
                 <li><span class="color-box community"></span> Community Conservation Areas</li>
                 <li><span class="color-box resettlement"></span> Resettlement Areas</li>
+                <li><span class="color-box matetsi-units"></span> Matetsi Units</li>
                 <li><span class="color-box water-sources"></span> Water Sources</li>
                 <li><span class="color-box project-sites"></span> Project Sites</li>
                 <li><span class="color-box buffer-wards"></span> Buffer Wards</li>
@@ -333,7 +338,7 @@
             "Carto Light": cartoLight
         };
         
-        // Load all GeoJSON layers - INCLUDING NEW ONES
+        // Load all GeoJSON layers - INCLUDING NEW FORESTS LAYER
         debug("Loading GeoJSON layers...");
         Promise.all([
             loadLandUseLayer(window.map),
@@ -344,6 +349,7 @@
             loadRiversLayer(window.map),
             loadRoadsLayer(window.map),
             loadPlacesLayer(window.map),
+            loadForestsLayer(window.map), // NEW: Added FORESTS layer
             // NEW LAYERS ADDED HERE
             loadWaterSourcesLayer(window.map),
             loadProjectSitesLayer(window.map),
@@ -459,10 +465,10 @@
         });
     }
 
-    // Function to load the Matetsi Units layer
+    // Function to load the Matetsi Units layer (UPDATED FOR LINESTRING)
     function loadMatetsiUnitsLayer(map) {
         return new Promise((resolve, reject) => {
-            fetch('data/matetsiunits.geojson')
+            fetch('data/matetsiunits.geojson') // Updated filename
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -472,10 +478,35 @@
                 .then(data => {
                     debug("Matetsi Units data loaded successfully");
                     
-                    // Add GeoJSON to map with styling and interactivity
+                    // Add GeoJSON to map with styling for linestrings
                     allLayers.matetsiUnits = L.geoJSON(data, {
-                        style: styleMatetsiUnits,
-                        onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
+                        style: {
+                            color: '#FF8C00', // Dark orange color for linestrings
+                            weight: 3, // Thicker line for visibility
+                            opacity: 0.8
+                        },
+                        onEachFeature: function(feature, layer) {
+                            // Only add popup, no mouseover effects
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+
+                            // Only add click handler for zooming
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
                     }).addTo(map);
                     
                     // Add to overlay control
@@ -485,6 +516,45 @@
                 })
                 .catch(error => {
                     console.error("Error loading Matetsi Units data:", error);
+                    // Don't reject, just resolve with a warning to allow other layers to load
+                    resolve();
+                });
+        });
+    }
+
+    // NEW: Function to load the FORESTS layer
+    function loadForestsLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/forests.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Forests data loaded successfully");
+
+                    // Add GeoJSON to map with dark green styling (same as forest areas in landuse)
+                    allLayers.forests = L.geoJSON(data, {
+                        style: {
+                            fillColor: '#006400', // Dark green color (same as forest areas in landuse)
+                            weight: 1,
+                            opacity: 1,
+                            color: '#666',
+                            dashArray: '',
+                            fillOpacity: 0.7
+                        },
+                        onEachFeature: onEachLandUseFeature   // Use the same labeling function as land use
+                    }).addTo(map);
+
+                    // Add to overlay control
+                    overlayLayers["Forests"] = allLayers.forests;
+
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Forests data:", error);
                     // Don't reject, just resolve with a warning to allow other layers to load
                     resolve();
                 });
@@ -747,9 +817,9 @@
                     allLayers.places = L.geoJSON(data, {
                         pointToLayer: function(feature, latlng) {
                             return L.circleMarker(latlng, {
-                                radius: 4, // Increased from 2 to 4 to make more visible
-                                fillColor: "#FFA500",
-                                color: "#000",
+                                radius: 2, // Reduced from 4 to 2 as requested
+                                fillColor: "#000", // Changed to black as requested
+                                color: "#000", // Black border
                                 weight: 1,
                                 opacity: 1,
                                 fillOpacity: 0.8
@@ -770,13 +840,15 @@
                                 popupContent += '</div>';
                                 layer.bindPopup(popupContent);
                                 
-                                // Add label for places
-                                let name = feature.properties.name || feature.properties.Name || 
-                                          feature.properties.NAME || feature.properties.title || 
-                                          feature.properties.TITLE || '';
+                                // Look specifically for FULL_NAME property as requested
+                                let name = feature.properties.FULL_NAME || feature.properties.full_name ||
+                                            feature.properties.name || feature.properties.Name ||
+                                            feature.properties.NAME || feature.properties.title ||
+                                            feature.properties.TITLE || '';
+
                                 if (name) {
                                     layer.bindTooltip(name, {
-                                        permanent: true,
+                                        permanent: true, // Make labels permanent by default
                                         direction: 'right',
                                         offset: [10, 0], // Add offset to prevent overlap with marker
                                         className: 'place-label'
@@ -784,9 +856,9 @@
                                 }
                             }
                         }
-                    });
+                    }).addTo(map); // Add to map by default
                     
-                    // Add to overlay control but don't add to map by default
+                    // Add to overlay control
                     overlayLayers["Places"] = allLayers.places;
                     
                     resolve();
@@ -1324,46 +1396,38 @@
         window.map.fitBounds(e.target.getBounds());
     }
 
-    // Create a legend for the map - UPDATED WITH NEW LAYERS AND MOVED TO LEFT
+    // Create legend function
     function createLegend(map) {
-        try {
-            const legend = L.control({ position: 'topleft' }); // CHANGED FROM 'bottomright' TO 'topleft'
-            
-            legend.onAdd = function() {
-                const div = L.DomUtil.create('div', 'info legend');
-                const categories = [
-                    { name: 'National Park', value: 'national park' },
-                    { name: 'Forest/State Forest', value: 'forest' },
-                    { name: 'Safari Area', value: 'safari' },
-                    { name: 'Community Conservation', value: 'community' },
-                    { name: 'Resettlement Area', value: '' },
-                    { name: 'Water Sources', color: '#0000FF' },
-                    { name: 'Project Sites', color: '#FF6600' },
-                    { name: 'Buffer Wards', color: '#FFFF99' },
-                    { name: 'Elephant Movement - Low', color: '#FFA500' },
-                    { name: 'Elephant Movement - Medium', color: '#FF0000' },
-                    { name: 'Elephant Movement - High', color: '#800080' }
-                ];
-                
-                div.innerHTML = '<h4>Legend</h4>';
-                
-                // Loop through our categories and generate a label with a colored square for each
-                for (let i = 0; i < categories.length; i++) {
-                    const color = categories[i].color || getColor(categories[i].value);
-                    div.innerHTML +=
-                        '<i style="background:' + color + '"></i> ' +
-                        categories[i].name + '<br>';
-                }
-                
-                return div;
-            };
-            
-            legend.addTo(map);
-            
-            return legend;
-        } catch (error) {
-            console.error("Error creating legend:", error);
-        }
+        const legend = L.control({ position: 'bottomright' });
+
+        legend.onAdd = function (map) {
+            const div = L.DomUtil.create('div', 'info legend');
+            const designations = [
+                { name: 'National Park', color: '#90EE90' },
+                { name: 'Forest Area', color: '#006400' },
+                { name: 'Safari Area', color: '#F5DEB3' },
+                { name: 'Community Conservation Area', color: '#D2B48C' },
+                { name: 'Resettlement Area/Unknown', color: '#A52A2A' },
+                { name: 'Water Sources', color: '#0000FF' },
+                { name: 'Project Sites', color: '#FF6600' },
+                { name: 'Buffer Wards', color: '#FFFF99' },
+                { name: 'Matetsi Units', color: '#FF8C00' },
+                { name: 'Elephant Movement - Low', color: '#FFA500' },
+                { name: 'Elephant Movement - Medium', color: '#FF0000' },
+                { name: 'Elephant Movement - High', color: '#800080' }
+            ];
+
+            div.innerHTML += '<h4>Legend</h4>';
+            for (let i = 0; i < designations.length; i++) {
+                div.innerHTML +=
+                    '<i style="background:' + designations[i].color + '"></i> ' +
+                    designations[i].name + '<br>';
+            }
+
+            return div;
+        };
+
+        legend.addTo(map);
     }
     </script>
 </body>

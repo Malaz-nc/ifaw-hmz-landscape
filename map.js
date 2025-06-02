@@ -42,6 +42,16 @@ document.addEventListener('DOMContentLoaded', function() {
             text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
             pointer-events: none !important;
         }
+        .matetsi-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 11px !important;
+            font-weight: bold !important;
+            color: #FF8C00 !important;
+            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+            pointer-events: none !important;
+        }
     `;
     document.head.appendChild(style);
 
@@ -95,7 +105,7 @@ function initializeMap() {
         "Carto Light": cartoLight
     };
 
-    // Load all GeoJSON layers
+    // Load all GeoJSON layers - REMOVED FORESTS LAYER
     debug("Loading GeoJSON layers...");
     Promise.all([
         loadLandUseLayer(window.map),
@@ -106,7 +116,7 @@ function initializeMap() {
         loadRiversLayer(window.map),
         loadRoadsLayer(window.map),
         loadPlacesLayer(window.map),
-        loadForestsLayer(window.map), // NEW: Added FORESTS layer
+        // REMOVED: loadForestsLayer(window.map), - forests.geojson file doesn't exist
         // Add new layers
         loadWaterSourcesLayer(window.map),
         loadProjectSitesLayer(window.map),
@@ -222,7 +232,7 @@ function loadCommunityCALayer(map) {
     });
 }
 
-// Function to load the Matetsi Units layer (UPDATED FOR LINESTRING)
+// Function to load the Matetsi Units layer (UPDATED FOR LINESTRING WITH LABELING)
 function loadMatetsiUnitsLayer(map) {
     return new Promise((resolve, reject) => {
         fetch('data/matetsiunits.geojson') // Updated filename
@@ -257,6 +267,38 @@ function loadMatetsiUnitsLayer(map) {
 
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
+
+                            // ADD LABELING FOR MATETSI UNITS
+                            let name = feature.properties.name || feature.properties.Name ||
+                                        feature.properties.NAME || feature.properties.unit_name ||
+                                        feature.properties.UNIT_NAME || feature.properties.Unit ||
+                                        feature.properties.UNIT || feature.properties.id ||
+                                        feature.properties.ID || '';
+
+                            if (name) {
+                                // Get the center point of the linestring for label placement
+                                const bounds = layer.getBounds();
+                                const center = bounds.getCenter();
+
+                                // Create a label at the center of the linestring
+                                setTimeout(() => {
+                                    try {
+                                        const labelMarker = L.marker(center, {
+                                            icon: L.divIcon({
+                                                html: name,
+                                                className: 'matetsi-label',
+                                                iconSize: [80, 16],
+                                                iconAnchor: [40, 8]
+                                            })
+                                        }).addTo(window.map);
+
+                                        // Store the label marker reference
+                                        layer.labelMarker = labelMarker;
+                                    } catch (e) {
+                                        console.error("Error adding Matetsi Units label:", e);
+                                    }
+                                }, 100);
+                            }
                         }
 
                         // Only add click handler for zooming
@@ -273,45 +315,6 @@ function loadMatetsiUnitsLayer(map) {
             })
             .catch(error => {
                 console.error("Error loading Matetsi Units data:", error);
-                // Don't reject, just resolve with a warning to allow other layers to load
-                resolve();
-            });
-    });
-}
-
-// NEW: Function to load the FORESTS layer
-function loadForestsLayer(map) {
-    return new Promise((resolve, reject) => {
-        fetch('data/forests.geojson')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                debug("Forests data loaded successfully");
-
-                // Add GeoJSON to map with dark green styling (same as forest areas in landuse)
-                allLayers.forests = L.geoJSON(data, {
-                    style: {
-                        fillColor: '#006400', // Dark green color (same as forest areas in landuse)
-                        weight: 1,
-                        opacity: 1,
-                        color: '#666',
-                        dashArray: '',
-                        fillOpacity: 0.7
-                    },
-                    onEachFeature: onEachLandUseFeature   // Use the same labeling function as land use
-                }).addTo(map);
-
-                // Add to overlay control
-                overlayLayers["Forests"] = allLayers.forests;
-
-                resolve();
-            })
-            .catch(error => {
-                console.error("Error loading Forests data:", error);
                 // Don't reject, just resolve with a warning to allow other layers to load
                 resolve();
             });
@@ -1153,7 +1156,7 @@ function zoomToFeature(e) {
     window.map.fitBounds(e.target.getBounds());
 }
 
-// Create legend function
+// Create legend function (UPDATED - REMOVED FORESTS)
 function createLegend(map) {
     const legend = L.control({ position: 'bottomright' });
 

@@ -73,7 +73,8 @@ function initializeMap() {
     debug("Creating map...");
 
     // Create the map with a global variable so we can access it elsewhere
-    window.map = L.map('map', {
+    // FIXED: Changed from 'map' to 'landuse-map' to match HTML
+    window.map = L.map('landuse-map', {
         center: [-18.86, 26.31], // Centered more on Hwange National Park
         zoom: 9, // Closer zoom to focus on the area
         maxZoom: CONFIG.maxZoom,
@@ -1121,30 +1122,6 @@ function styleIntersected(feature) {
         color: '#666',
         dashArray: '',
         fillOpacity: 0.7
-    };
-}
-
-// Style function for Community CA features - specific brown color
-function styleCommunityCA(feature) {
-    return {
-        fillColor: '#8B4513', // Dark brown for Community CA
-        weight: 1,
-        opacity: 1,
-        color: '#666',
-        dashArray: '',
-        fillOpacity: 0.6
-    };
-}
-
-// Style function for Matetsi Units features - beige color for Safari
-function styleMatetsiUnits(feature) {
-    return {
-        fillColor: '#F5DEB3', // Beige for Safari Areas
-        weight: 1,
-        opacity: 1,
-        color: '#666',
-        dashArray: '',
-        fillOpacity: 0.6
     };
 }
 

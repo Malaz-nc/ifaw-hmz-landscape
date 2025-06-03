@@ -18,39 +18,7 @@ const overlayLayers = {}; // For layer control
 // Initialize the map when document is ready
 document.addEventListener('DOMContentLoaded', function() {
     debug("Document ready, initializing map...");
-    
-    // Double-check that the DOM is fully loaded
-    if (document.readyState === 'loading') {
-        debug("DOM still loading, waiting...");
-        setTimeout(() => {
-            initializeMapAfterDelay();
-        }, 100);
-    } else {
-        initializeMapAfterDelay();
-    }
-});
 
-// Backup initialization method - can be called manually if needed
-window.initMapManually = function() {
-    debug("Manual map initialization triggered");
-    initializeMapAfterDelay();
-};
-
-// Also try to initialize on window load as a fallback
-window.addEventListener('load', function() {
-    // Only initialize if map hasn't been created yet
-    if (!window.map) {
-        debug("Window loaded, attempting backup initialization");
-        setTimeout(() => {
-            if (!window.map) {
-                initializeMapAfterDelay();
-            }
-        }, 100);
-    }
-});
-
-// Alternative initialization method with delay
-function initializeMapAfterDelay() {
     // Add CSS for labels - INCLUDING INTERSECTED LAYER LABELS
     const style = document.createElement('style');
     style.innerHTML = `
@@ -97,33 +65,15 @@ function initializeMapAfterDelay() {
     `;
     document.head.appendChild(style);
 
-    // Small delay to ensure DOM is completely ready
-    setTimeout(() => {
-        initializeMap();
-    }, 50);
-}
+    initializeMap();
+});
 
 // Initialize the map and load layers
 function initializeMap() {
     debug("Creating map...");
 
-    // Check if the map container exists
-    const mapContainer = document.getElementById('landuse-map');
-    if (!mapContainer) {
-        console.error("Map container 'landuse-map' not found in DOM");
-        const loadingIndicator = document.getElementById('loading-indicator');
-        if (loadingIndicator) {
-            loadingIndicator.innerHTML = 'Error: Map container not found. Please check the HTML structure.';
-            loadingIndicator.style.color = 'red';
-        }
-        return;
-    }
-
-    debug("Map container found, initializing...");
-
     // Create the map with a global variable so we can access it elsewhere
-    // FIXED: Changed from 'map' to 'landuse-map' to match HTML
-    window.map = L.map('landuse-map', {
+    window.map = L.map('map', {
         center: [-18.86, 26.31], // Centered more on Hwange National Park
         zoom: 9, // Closer zoom to focus on the area
         maxZoom: CONFIG.maxZoom,
@@ -1171,6 +1121,30 @@ function styleIntersected(feature) {
         color: '#666',
         dashArray: '',
         fillOpacity: 0.7
+    };
+}
+
+// Style function for Community CA features - specific brown color
+function styleCommunityCA(feature) {
+    return {
+        fillColor: '#8B4513', // Dark brown for Community CA
+        weight: 1,
+        opacity: 1,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.6
+    };
+}
+
+// Style function for Matetsi Units features - beige color for Safari
+function styleMatetsiUnits(feature) {
+    return {
+        fillColor: '#F5DEB3', // Beige for Safari Areas
+        weight: 1,
+        opacity: 1,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.6
     };
 }
 

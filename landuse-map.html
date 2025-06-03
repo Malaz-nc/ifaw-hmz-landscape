@@ -16,37 +16,58 @@
             padding: 0;
             margin: 0;
             font-family: Arial, Helvetica, sans-serif;
+            overflow: hidden; /* Prevent scrollbars */
         }
         
+        /* Remove container restrictions for full screen */
         .container {
-            padding: 20px;
-            max-width: 1200px;
-            margin: 0 auto;
+            padding: 0;
+            margin: 0;
+            max-width: none;
+            width: 100vw;
+            height: 100vh;
         }
         
         h1 {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            margin: 0;
+            border-radius: 5px;
+            font-size: 18px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
             color: #333;
-            margin-bottom: 15px;
         }
         
-        /* Map container - KEEP THE ID AS landuse-map to match the JS */
+        /* Map container - FULL VIEWPORT */
         #landuse-map {
-            height: 80vh;
-            width: 100%;
-            border: 1px solid #ccc;
-            position: relative;
-            z-index: 1; /* Ensure map is below tooltips/popups */
+            height: 100vh;
+            width: 100vw;
+            border: none;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
         
         /* Loading indicator */
         #loading-indicator {
-            padding: 10px;
-            background-color: #f8f9fa;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2000;
+            padding: 20px;
+            background-color: rgba(248, 249, 250, 0.95);
             border: 1px solid #ddd;
-            margin-bottom: 10px;
+            border-radius: 5px;
             text-align: center;
             font-weight: bold;
             color: #666;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
         
         /* Info box styles */
@@ -158,20 +179,9 @@
             background-color: #800080; /* Purple for high intensity */
         }
         
+        /* HIDE the map info section for full screen */
         #map-info {
-            margin-top: 15px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-        }
-        
-        #map-info ul {
-            list-style-type: none;
-            padding-left: 10px;
-        }
-        
-        #map-info li {
-            margin-bottom: 5px;
+            display: none;
         }
         
         /* Label styles - Important: Make sure these are applied properly */
@@ -249,7 +259,7 @@
         <h1>Hwange-Matetsi-Zambezi Area - Land Use Map</h1>
         <div id="loading-indicator">Loading map data... Please wait.</div>
         <div id="landuse-map"></div>
-        <div id="map-info">
+        <div id="map-info" style="display: none;">
             <p>This map displays land use categories and additional layers in the Hwange-Matetsi-Zambezi area with the following color scheme:</p>
             <ul>
                 <li><span class="color-box national-park"></span> National Parks</li>

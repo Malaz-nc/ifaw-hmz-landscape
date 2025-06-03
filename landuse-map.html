@@ -12,62 +12,78 @@
     
     <!-- Custom Styles (Internal to avoid CSS conflicts) -->
     <style>
-        body {
-            padding: 0;
-            margin: 0;
+        /* UNIVERSAL RESET TO ELIMINATE ALL MARGINS/PADDING */
+        * {
+            margin: 0 !important;
+            padding: 0 !important;
+            box-sizing: border-box;
+        }
+        
+        html, body {
+            height: 100vh !important;
+            width: 100vw !important;
+            margin: 0 !important;
+            padding: 0 !important;
             font-family: Arial, Helvetica, sans-serif;
-            overflow: hidden; /* Prevent scrollbars */
+            overflow: hidden !important;
         }
         
         /* Remove container restrictions for full screen */
         .container {
-            padding: 0;
-            margin: 0;
-            max-width: none;
-            width: 100vw;
-            height: 100vh;
+            padding: 0 !important;
+            margin: 0 !important;
+            max-width: none !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
         }
         
         h1 {
-            position: absolute;
-            top: 10px;
-            left: 10px;
-            z-index: 1000;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            margin: 0;
-            border-radius: 5px;
-            font-size: 18px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            color: #333;
+            position: fixed !important;
+            top: 10px !important;
+            left: 10px !important;
+            z-index: 2000 !important;
+            background: rgba(255, 255, 255, 0.9) !important;
+            padding: 5px 10px !important;
+            margin: 0 !important;
+            border-radius: 5px !important;
+            font-size: 18px !important;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3) !important;
+            color: #333 !important;
         }
         
-        /* Map container - FULL VIEWPORT */
+        /* Map container - ABSOLUTE FULL VIEWPORT */
         #landuse-map {
-            height: 100vh;
-            width: 100vw;
-            border: none;
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 1;
+            height: 100vh !important;
+            width: 100vw !important;
+            border: none !important;
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            z-index: 1 !important;
+            margin: 0 !important;
+            padding: 0 !important;
         }
         
         /* Loading indicator */
         #loading-indicator {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            z-index: 2000;
-            padding: 20px;
-            background-color: rgba(248, 249, 250, 0.95);
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            text-align: center;
-            font-weight: bold;
-            color: #666;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            position: fixed !important;
+            top: 50% !important;
+            left: 50% !important;
+            transform: translate(-50%, -50%) !important;
+            z-index: 3000 !important;
+            padding: 20px !important;
+            background-color: rgba(248, 249, 250, 0.95) !important;
+            border: 1px solid #ddd !important;
+            border-radius: 5px !important;
+            text-align: center !important;
+            font-weight: bold !important;
+            color: #666 !important;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3) !important;
         }
         
         /* Info box styles */
@@ -181,7 +197,7 @@
         
         /* HIDE the map info section for full screen */
         #map-info {
-            display: none;
+            display: none !important;
         }
         
         /* Label styles - Important: Make sure these are applied properly */
@@ -246,6 +262,47 @@
         .leaflet-tooltip-left:before,
         .leaflet-tooltip-right:before {
             display: none !important;
+        }
+        
+        /* FORCE LANDSCAPE ORIENTATION AND FULL SCREEN */
+        @media screen and (orientation: portrait) {
+            body::before {
+                content: "Please rotate your device to landscape mode for the best viewing experience";
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(0, 0, 0, 0.9);
+                color: white;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                text-align: center;
+                font-size: 18px;
+                z-index: 10000;
+                margin: 0 !important;
+                padding: 20px !important;
+            }
+        }
+        
+        /* OVERRIDE ANY POSSIBLE FRAMEWORK MARGINS */
+        .leaflet-container {
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        /* ELIMINATE ANY BROWSER DEFAULT MARGINS */
+        .leaflet-control-container {
+            margin: 0 !important;
+        }
+        
+        /* ENSURE CONTROLS STAY WITHIN VIEWPORT */
+        .leaflet-top,
+        .leaflet-bottom,
+        .leaflet-left,
+        .leaflet-right {
+            margin: 0 !important;
         }
     </style>
     

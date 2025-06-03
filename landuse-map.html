@@ -124,9 +124,9 @@
             background-color: #A52A2A; /* Brown */
         }
         
-        /* NEW: Large Scale Commercial Farming color */
-        .commercial-farming {
-            background-color: #808080; /* Grey color for large scale commercial farming */
+        /* Communal land uses same color as community conservation */
+        .communal-land {
+            background-color: #D2B48C; /* Tan/Brown for communal land */
         }
         
         /* Layer colors */
@@ -256,8 +256,7 @@
                 <li><span class="color-box forest"></span> Forest Land</li>
                 <li><span class="color-box safari"></span> Safari Areas</li>
                 <li><span class="color-box community"></span> Community Conservation Areas</li>
-                <li><span class="color-box commercial-farming"></span> Large Scale Commercial Farming</li>
-                <li><span class="color-box community"></span> Communal Land</li>
+                <li><span class="color-box communal-land"></span> Communal Land</li>
                 <li><span class="color-box resettlement"></span> Resettlement Areas</li>
                 <li><span class="color-box matetsi-units"></span> Matetsi Units</li>
                 <li><span class="color-box water-sources"></span> Water Sources</li>
@@ -670,11 +669,16 @@
         return 'Unknown';
     }
 
-    // Helper function to find the landtype property for intersected layer
+    // SIMPLIFIED: Helper function to find the landtype property (only for Forest Land & Communal Land)
     function findLandTypeProperty(properties) {
+        // Look for LANDTYPE property specifically (as shown in your data)
+        if (properties.LANDTYPE !== undefined && properties.LANDTYPE !== null && properties.LANDTYPE !== '') {
+            return properties.LANDTYPE;
+        }
+        
+        // Fallback to other possible property names
         const possibleProps = [
-            'landtype', 'land_type', 'LANDTYPE', 'LAND_TYPE', 'type', 'Type', 'TYPE',
-            'class', 'Class', 'CLASS', 'category', 'Category', 'CATEGORY'
+            'landtype', 'land_type', 'LAND_TYPE', 'type', 'Type', 'TYPE'
         ];
 
         for (const prop of possibleProps) {
@@ -712,26 +716,20 @@
         return color;
     }
 
-    // NEW: Function to determine color based on landtype for intersected layer
+    // SIMPLIFIED: Function to determine color based on landtype (only Forest Land & Communal Land)
     function getLandTypeColor(landtype) {
-        let color = '#CCCCCC'; // Light gray for unknown
-
-        if (!landtype) return color;
+        if (!landtype) return '#CCCCCC'; // Light gray for unknown
 
         const type = String(landtype).toLowerCase();
 
-        if (type.includes('forest') || type.includes('woodland') || type.includes('tree')) {
-            color = '#006400'; // Dark green for forest land
-        } else if (type.includes('large scale') || type.includes('commercial') || 
-                   type.includes('farming') || type.includes('agriculture') ||
-                   type.includes('crop') || type.includes('plantation')) {
-            color = '#808080'; // Grey color for large scale commercial farming
-        } else if (type.includes('communal') || type.includes('community') ||
-                   type.includes('smallholder') || type.includes('subsistence')) {
-            color = '#D2B48C'; // Same color as community conservation areas
+        // Simplified logic for only two types
+        if (type.includes('forest')) {
+            return '#006400'; // Dark green for Forest Land
+        } else if (type.includes('communal')) {
+            return '#D2B48C'; // Tan/brown for Communal Land
         }
 
-        return color;
+        return '#CCCCCC'; // Default gray for unknown
     }
 
     // Style function for Land Use GeoJSON features
@@ -830,20 +828,18 @@
         });
     }
 
-    // NEW: Specific function for intersected features with labeling
+    // SIMPLIFIED: Specific function for intersected features with labeling (only Forest Land & Communal Land)
     function onEachIntersectedFeature(feature, layer) {
         if (feature.properties) {
             const landtype = findLandTypeProperty(feature.properties);
-            let name = feature.properties.name || feature.properties.Name ||
-                        feature.properties.NAME || feature.properties.title ||
-                        feature.properties.TITLE || feature.properties.area_name ||
-                        feature.properties.AREA_NAME || '';
+            let name = feature.properties.NAME || feature.properties.name || 
+                        feature.properties.Name || feature.properties.title ||
+                        feature.properties.TITLE || '';
 
             let popupContent = '<div class="popup-content">';
 
             if (landtype) {
-                const displayLandtype = landtype === 'Unknown' ? 'Unclassified Land' : landtype;
-                popupContent += `<strong>Land Type:</strong> ${displayLandtype}<br>`;
+                popupContent += `<strong>Land Type:</strong> ${landtype}<br>`;
             }
 
             if (name) {
@@ -853,8 +849,7 @@
             for (const prop in feature.properties) {
                 if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
                 if (prop === 'name' || prop === 'Name' || prop === 'NAME' ||
-                    prop === 'landtype' || prop === 'land_type' || prop === 'LANDTYPE' || 
-                    prop === 'LAND_TYPE' || prop === 'type' || prop === 'Type' || prop === 'TYPE') continue;
+                    prop === 'LANDTYPE' || prop === 'landtype' || prop === 'type') continue;
 
                 const value = feature.properties[prop];
                 if (value !== null && value !== undefined && value !== '') {
@@ -1123,7 +1118,7 @@
         window.map.fitBounds(e.target.getBounds());
     }
 
-    // Create legend function (UPDATED - REPLACED FORESTS WITH LAND TYPES)
+    // SIMPLIFIED: Create legend function (updated for simplified intersected layer)
     function createLegend(map) {
         const legend = L.control({ position: 'bottomright' });
 
@@ -1134,7 +1129,6 @@
                 { name: 'Forest Land', color: '#006400' },
                 { name: 'Safari Area', color: '#F5DEB3' },
                 { name: 'Community Conservation Area', color: '#D2B48C' },
-                { name: 'Large Scale Commercial Farming', color: '#808080' },
                 { name: 'Communal Land', color: '#D2B48C' },
                 { name: 'Resettlement Area/Unknown', color: '#A52A2A' },
                 { name: 'Water Sources', color: '#0000FF' },

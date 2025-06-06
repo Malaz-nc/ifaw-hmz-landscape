@@ -208,6 +208,22 @@
             background-color: #FF8C00; /* Dark orange for linestrings */
         }
         
+        .chiefs {
+            background-color: #8B0000; /* Dark red for chiefs */
+        }
+        
+        .chief-buffer {
+            background-color: #FFA500; /* Orange for chief buffer zones */
+        }
+        
+        .ifaw-tracks {
+            background-color: #800080; /* Purple for IFAW elephant tracks */
+        }
+        
+        .landscape-boundary {
+            background-color: #FF0000; /* Red for landscape boundary */
+        }
+        
         .elephant-low {
             background-color: #FFA500; /* Orange for low intensity */
         }
@@ -271,6 +287,19 @@
             font-size: 11px !important;
             font-weight: bold !important;
             color: #333 !important;
+            text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+            pointer-events: none !important;
+            z-index: 1000 !important;
+        }
+        
+        /* Chief label style */
+        .chief-label {
+            background: none !important;
+            border: none !important;
+            box-shadow: none !important;
+            font-size: 12px !important;
+            font-weight: bold !important;
+            color: #8B0000 !important;
             text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
             pointer-events: none !important;
             z-index: 1000 !important;
@@ -379,6 +408,10 @@
                 <li><span class="color-box community"></span> Communal Land</li>
                 <li><span class="color-box resettlement"></span> Resettlement Areas</li>
                 <li><span class="color-box matetsi-units"></span> Matetsi Units</li>
+                <li><span class="color-box chiefs"></span> Chiefs</li>
+                <li><span class="color-box chief-buffer"></span> Chief Buffer Zones (30km)</li>
+                <li><span class="color-box ifaw-tracks"></span> IFAW Elephant Tracks</li>
+                <li><span class="color-box landscape-boundary"></span> Landscape Boundary</li>
                 <li><span class="color-box water-sources"></span> Water Sources</li>
                 <li><span class="color-box project-sites"></span> Project Sites</li>
                 <li><span class="color-box buffer-wards"></span> Buffer Wards</li>
@@ -459,6 +492,17 @@
                 pointer-events: none !important;
                 z-index: 1000 !important;
             }
+            .chief-label {
+                background: none !important;
+                border: none !important;
+                box-shadow: none !important;
+                font-size: 12px !important;
+                font-weight: bold !important;
+                color: #8B0000 !important;
+                text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
+                pointer-events: none !important;
+                z-index: 1000 !important;
+            }
         `;
         document.head.appendChild(style);
         
@@ -512,23 +556,26 @@
             "Carto Light": cartoLight
         };
         
-        // Load all GeoJSON layers - REPLACED FORESTS WITH INTERSECTED LAYER
+        // Load all GeoJSON layers - UPDATED WITH NEW LAYERS
         debug("Loading GeoJSON layers...");
         Promise.all([
             loadLandUseLayer(window.map),
             loadCommunityCALayer(window.map),
             loadMatetsiUnitsLayer(window.map),
-            loadIntersectedLayer(window.map), // NEW: Added intersected layer to replace forests
-            loadLandscapeBoundaryLayer(window.map),
+            loadIntersectedLayer(window.map),
+            loadLandscapeBoundaryLayer(window.map), // Updated with red color and 3px thickness
             loadDistrictBoundariesLayer(window.map),
             loadRiversLayer(window.map),
             loadRoadsLayer(window.map),
             loadPlacesLayer(window.map),
-            // Add other layers
+            // Existing layers
             loadWaterSourcesLayer(window.map),
             loadProjectSitesLayer(window.map),
             loadBufferWardsLayer(window.map),
-            loadElephantMovementLayer(window.map)
+            loadElephantMovementLayer(window.map),
+            // NEW LAYERS
+            loadChiefsLayer(window.map), // Chiefs with 30km buffer circles
+            loadIFAWElephantTracksLayer(window.map) // IFAW elephant collared tracks in purple
         ])
         .then(() => {
             debug("All layers loaded successfully");
@@ -760,9 +807,250 @@
         });
     }
 
-    // Continue with remaining layer functions...
-    // (The rest of the functions would be the same as in the map.js file)
-    // Including all helper functions for styling, labeling, and legend creation
+    // Function to load the Landscape Boundary layer - UPDATED WITH RED COLOR AND 3PX THICKNESS
+    function loadLandscapeBoundaryLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/Landscape_boundary.geojson') // Updated filename
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Landscape Boundary data loaded successfully");
+
+                    // Add GeoJSON to map with styling and interactivity
+                    allLayers.landscapeBoundary = L.geoJSON(data, {
+                        style: {
+                            color: '#FF0000', // Red color as requested
+                            weight: 3, // 3px thickness as requested
+                            opacity: 1,
+                            fillOpacity: 0
+                        },
+                        onEachFeature: function(feature, layer) {
+                            // Only add popup, no mouseover effects
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+                            }
+
+                            // Only add click handler for zooming
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    }).addTo(map);
+
+                    // Add to overlay control
+                    overlayLayers["Landscape Boundary"] = allLayers.landscapeBoundary;
+
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Landscape Boundary data:", error);
+                    resolve();
+                });
+        });
+    }
+
+    // NEW FUNCTION: Load Chiefs layer with 30km buffer circles
+    function loadChiefsLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/chiefs.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("Chiefs data loaded successfully");
+
+                    // Create a layer group to hold both chiefs and their buffers
+                    allLayers.chiefs = L.layerGroup();
+                    allLayers.chiefBuffers = L.layerGroup();
+
+                    // Add GeoJSON to map with point markers for chiefs
+                    const chiefsLayer = L.geoJSON(data, {
+                        pointToLayer: function(feature, latlng) {
+                            // Create the chief marker
+                            const chiefMarker = L.circleMarker(latlng, {
+                                radius: 8,
+                                fillColor: "#8B0000", // Dark red for chiefs
+                                color: "#FF0000", // Red border
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            });
+
+                            // Create 30km buffer circle with transparent orange color
+                            const bufferCircle = L.circle(latlng, {
+                                radius: 30000, // 30km in meters
+                                fillColor: "#FFA500", // Orange color
+                                color: "#FF8C00", // Darker orange border
+                                weight: 2,
+                                opacity: 0.6,
+                                fillOpacity: 0.2 // Transparent
+                            });
+
+                            // Add buffer to buffer layer group
+                            allLayers.chiefBuffers.addLayer(bufferCircle);
+
+                            return chiefMarker;
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+
+                                // Add chief name as label
+                                let name = feature.properties.name || feature.properties.Name ||
+                                            feature.properties.NAME || feature.properties.chief_name ||
+                                            feature.properties.Chief || feature.properties.CHIEF || '';
+
+                                if (name) {
+                                    layer.bindTooltip(name, {
+                                        permanent: true,
+                                        direction: 'top',
+                                        offset: [0, -15],
+                                        className: 'chief-label'
+                                    });
+                                }
+                            }
+
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    });
+
+                    // Add chiefs to the chiefs layer group
+                    allLayers.chiefs.addLayer(chiefsLayer);
+
+                    // Add both layer groups to the map
+                    allLayers.chiefs.addTo(map);
+                    allLayers.chiefBuffers.addTo(map);
+
+                    // Add to overlay control
+                    overlayLayers["Chiefs"] = allLayers.chiefs;
+                    overlayLayers["Chief Buffer Zones (30km)"] = allLayers.chiefBuffers;
+
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading Chiefs data:", error);
+                    resolve();
+                });
+        });
+    }
+
+    // NEW FUNCTION: Load IFAW Elephant Collared Tracks in purple
+    function loadIFAWElephantTracksLayer(map) {
+        return new Promise((resolve, reject) => {
+            fetch('data/ifaw_collared_elephant_movement.geojson')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! Status: ${response.status}`);
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    debug("IFAW Elephant Tracks data loaded successfully");
+
+                    // Add GeoJSON to map with purple styling
+                    allLayers.ifawElephantTracks = L.geoJSON(data, {
+                        style: function(feature) {
+                            // Check if it's a line or point feature and style accordingly
+                            if (feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString') {
+                                return {
+                                    color: '#800080', // Purple color for tracks
+                                    weight: 3,
+                                    opacity: 0.8
+                                };
+                            } else {
+                                // For point features, this will be handled in pointToLayer
+                                return {};
+                            }
+                        },
+                        pointToLayer: function(feature, latlng) {
+                            return L.circleMarker(latlng, {
+                                radius: 5,
+                                fillColor: "#800080", // Purple color for elephant points
+                                color: "#4B0082", // Darker purple border
+                                weight: 2,
+                                opacity: 1,
+                                fillOpacity: 0.8
+                            });
+                        },
+                        onEachFeature: function(feature, layer) {
+                            if (feature.properties) {
+                                let popupContent = '<div class="popup-content">';
+                                popupContent += '<strong>IFAW Collared Elephant Movement</strong><br>';
+
+                                for (const prop in feature.properties) {
+                                    const value = feature.properties[prop];
+                                    if (value !== null && value !== undefined && value !== '') {
+                                        if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                        popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                    }
+                                }
+
+                                popupContent += '</div>';
+                                layer.bindPopup(popupContent);
+
+                                // Add elephant ID or name as label if available
+                                let name = feature.properties.elephant_id || feature.properties.Elephant_ID ||
+                                            feature.properties.id || feature.properties.ID ||
+                                            feature.properties.name || feature.properties.Name ||
+                                            feature.properties.collar_id || feature.properties.Collar_ID || '';
+
+                                if (name) {
+                                    layer.bindTooltip(`Elephant: ${name}`, {
+                                        permanent: false,
+                                        direction: 'top',
+                                        offset: [0, -10],
+                                        className: 'place-label'
+                                    });
+                                }
+                            }
+
+                            layer.on({
+                                click: zoomToFeature
+                            });
+                        }
+                    });
+
+                    // Add to overlay control
+                    overlayLayers["IFAW Elephant Tracks"] = allLayers.ifawElephantTracks;
+
+                    resolve();
+                })
+                .catch(error => {
+                    console.error("Error loading IFAW Elephant Tracks data:", error);
+                    resolve();
+                });
+        });
+    }
 
     // Helper function to find the designation property
     function findDesignationProperty(properties) {
@@ -1017,23 +1305,7 @@
         });
     }
 
-    // Load remaining layers
-    function loadLandscapeBoundaryLayer(map) {
-        return new Promise((resolve, reject) => {
-            fetch('data/landscapeboundary.geojson')
-                .then(response => response.ok ? response.json() : Promise.reject(new Error(`HTTP error! Status: ${response.status}`)))
-                .then(data => {
-                    allLayers.landscapeBoundary = L.geoJSON(data, {
-                        style: { color: '#FF0000', weight: 4, opacity: 1, fillOpacity: 0 },
-                        onEachFeature: onEachFeature
-                    }).addTo(map);
-                    overlayLayers["Landscape Boundary"] = allLayers.landscapeBoundary;
-                    resolve();
-                })
-                .catch(error => { console.error("Error loading Landscape Boundary data:", error); resolve(); });
-        });
-    }
-
+    // Simplified layer loading functions for remaining layers
     function loadDistrictBoundariesLayer(map) {
         return new Promise((resolve, reject) => {
             fetch('data/Districtboundaries.geojson')
@@ -1242,7 +1514,7 @@
         window.map.fitBounds(e.target.getBounds());
     }
 
-    // Create legend function
+    // Create legend function - UPDATED WITH NEW LAYERS
     function createLegend(map) {
         const legend = L.control({ position: 'bottomright' });
 
@@ -1260,9 +1532,13 @@
                 { name: 'Project Sites', color: '#FF6600' },
                 { name: 'Buffer Wards', color: '#FFFF99' },
                 { name: 'Matetsi Units', color: '#FF8C00' },
+                { name: 'Chiefs', color: '#8B0000' },
+                { name: 'Chief Buffer Zones (30km)', color: '#FFA500' },
+                { name: 'IFAW Elephant Tracks', color: '#800080' },
                 { name: 'Elephant Movement - Low', color: '#FFA500' },
                 { name: 'Elephant Movement - Medium', color: '#FF0000' },
-                { name: 'Elephant Movement - High', color: '#800080' }
+                { name: 'Elephant Movement - High', color: '#800080' },
+                { name: 'Landscape Boundary', color: '#FF0000' }
             ];
 
             div.innerHTML += '<h4>Legend</h4>';

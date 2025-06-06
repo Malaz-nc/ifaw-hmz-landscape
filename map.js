@@ -125,7 +125,7 @@ function initializeMap() {
         "Carto Light": cartoLight
     };
 
-    // Load all GeoJSON layers - UPDATED WITH NEW LAYERS (IFAW tracks load last to appear on top)
+    // Load all GeoJSON layers - ADDED NEW LAYERS
     debug("Loading GeoJSON layers...");
     Promise.all([
         loadLandUseLayer(window.map),
@@ -141,14 +141,11 @@ function initializeMap() {
         loadWaterSourcesLayer(window.map),
         loadProjectSitesLayer(window.map),
         loadBufferWardsLayer(window.map),
-        loadElephantMovementLayer(window.map), // Regular elephant movement loads first
+        loadElephantMovementLayer(window.map),
         // NEW LAYERS
-        loadChiefsLayer(window.map), // Chiefs with 20km buffer circles
+        loadChiefsLayer(window.map), // Chiefs with 30km buffer circles
+        loadIFAWElephantTracksLayer(window.map) // IFAW elephant collared tracks in purple
     ])
-    .then(() => {
-        // Load IFAW elephant tracks AFTER all other layers to ensure it appears on top
-        return loadIFAWElephantTracksLayer(window.map);
-    })
     .then(() => {
         debug("All layers loaded successfully");
         createLegend(window.map);
@@ -984,7 +981,7 @@ function loadElephantMovementLayer(map) {
     });
 }
 
-// NEW FUNCTION: Load Chiefs layer with 20km buffer circles
+// NEW FUNCTION: Load Chiefs layer with 30km buffer circles
 function loadChiefsLayer(map) {
     return new Promise((resolve, reject) => {
         fetch('data/chiefs.geojson')
@@ -1014,14 +1011,14 @@ function loadChiefsLayer(map) {
                             fillOpacity: 0.8
                         });
 
-                        // Create 20km buffer circle with transparent red color
+                        // Create 30km buffer circle with transparent orange color
                         const bufferCircle = L.circle(latlng, {
-                            radius: 20000, // 20km in meters
-                            fillColor: "#FF0000", // Red color
-                            color: "#CC0000", // Darker red border
+                            radius: 30000, // 30km in meters
+                            fillColor: "#FFA500", // Orange color
+                            color: "#FF8C00", // Darker orange border
                             weight: 2,
                             opacity: 0.6,
-                            fillOpacity: 0.1 // 10% transparency
+                            fillOpacity: 0.2 // Transparent
                         });
 
                         // Add buffer to buffer layer group
@@ -1073,7 +1070,7 @@ function loadChiefsLayer(map) {
 
                 // Add to overlay control
                 overlayLayers["Chiefs"] = allLayers.chiefs;
-                overlayLayers["Chief Buffer Zones (20km)"] = allLayers.chiefBuffers;
+                overlayLayers["Chief Buffer Zones (30km)"] = allLayers.chiefBuffers;
 
                 resolve();
             })
@@ -1084,7 +1081,7 @@ function loadChiefsLayer(map) {
     });
 }
 
-// NEW FUNCTION: Load IFAW Elephant Collared Tracks in purple (non-transparent, displays on top)
+// NEW FUNCTION: Load IFAW Elephant Collared Tracks in purple
 function loadIFAWElephantTracksLayer(map) {
     return new Promise((resolve, reject) => {
         fetch('data/ifaw_collared_elephant_movement.geojson')
@@ -1097,15 +1094,15 @@ function loadIFAWElephantTracksLayer(map) {
             .then(data => {
                 debug("IFAW Elephant Tracks data loaded successfully");
 
-                // Add GeoJSON to map with purple styling (non-transparent)
+                // Add GeoJSON to map with purple styling
                 allLayers.ifawElephantTracks = L.geoJSON(data, {
                     style: function(feature) {
                         // Check if it's a line or point feature and style accordingly
                         if (feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString') {
                             return {
                                 color: '#800080', // Purple color for tracks
-                                weight: 4, // Slightly thicker for visibility
-                                opacity: 1 // Fully opaque
+                                weight: 3,
+                                opacity: 0.8
                             };
                         } else {
                             // For point features, this will be handled in pointToLayer
@@ -1114,12 +1111,12 @@ function loadIFAWElephantTracksLayer(map) {
                     },
                     pointToLayer: function(feature, latlng) {
                         return L.circleMarker(latlng, {
-                            radius: 6, // Slightly larger for visibility
+                            radius: 5,
                             fillColor: "#800080", // Purple color for elephant points
                             color: "#4B0082", // Darker purple border
                             weight: 2,
                             opacity: 1,
-                            fillOpacity: 1 // Fully opaque
+                            fillOpacity: 0.8
                         });
                     },
                     onEachFeature: function(feature, layer) {
@@ -1574,7 +1571,7 @@ function createLegend(map) {
             { name: 'Buffer Wards', color: '#FFFF99' },
             { name: 'Matetsi Units', color: '#FF8C00' },
             { name: 'Chiefs', color: '#8B0000' },
-            { name: 'Chief Buffer Zones (20km)', color: '#FF0000' },
+            { name: 'Chief Buffer Zones (30km)', color: '#FFA500' },
             { name: 'IFAW Elephant Tracks', color: '#800080' },
             { name: 'Elephant Movement - Low', color: '#FFA500' },
             { name: 'Elephant Movement - Medium', color: '#FF0000' },

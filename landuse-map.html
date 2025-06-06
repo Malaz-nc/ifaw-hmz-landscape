@@ -385,6 +385,36 @@
                 height: 16px !important;
             }
         }
+        
+        /* Information Panel Styles */
+        .area-info-content h3 {
+            color: #2c5530;
+            margin: 0 0 10px 0;
+            font-size: 18px;
+            border-bottom: 2px solid #90EE90;
+            padding-bottom: 5px;
+        }
+        .area-info-content h4 {
+            color: #4a4a4a;
+            margin: 15px 0 8px 0;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .area-info-content p {
+            margin: 5px 0;
+            color: #333;
+        }
+        .area-info-content ul {
+            margin: 8px 0;
+            padding-left: 20px;
+        }
+        .area-info-content li {
+            margin: 4px 0;
+            color: #444;
+        }
+        .area-info-content strong {
+            color: #2c5530;
+        }
     </style>
     
     <!-- Leaflet JavaScript -->
@@ -440,6 +470,195 @@
     // Store all layers
     const allLayers = {};
     const overlayLayers = {}; // For layer control
+
+    // Area Information Database
+    const areaInfo = {
+        'hwange': {
+            title: 'Hwange National Park',
+            content: `
+                <div class="area-info-content">
+                    <h3>Hwange National Park</h3>
+                    <p><strong>Size:</strong> 14,650 km² (Zimbabwe's largest national park)</p>
+                    <p><strong>Established:</strong> 1928 as game reserve, 1961 as national park</p>
+                    <p><strong>Location:</strong> Northwestern Zimbabwe, near Victoria Falls</p>
+                    
+                    <h4>Wildlife Highlights</h4>
+                    <ul>
+                        <li><strong>Elephants:</strong> Home to one of Africa's largest elephant populations (~40,000)</li>
+                        <li><strong>Big Five:</strong> Lion, leopard, buffalo, elephant (no rhino currently)</li>
+                        <li><strong>Mammals:</strong> 108 species including African wild dogs, cheetah, hyena</li>
+                        <li><strong>Birds:</strong> 400+ species including carmine bee-eater, ground hornbill</li>
+                        <li><strong>Unique species:</strong> Gemsbok, brown hyena, sable, roan antelope</li>
+                    </ul>
+                    
+                    <h4>Key Features</h4>
+                    <ul>
+                        <li>Artificial waterholes sustain wildlife during dry season</li>
+                        <li>Diverse habitats: Kalahari sands, mopane woodlands, teak forests</li>
+                        <li>Part of KAZA Transfrontier Conservation Area</li>
+                        <li>Best viewing: July-October (dry season)</li>
+                        <li>Famous for massive elephant gatherings at waterholes</li>
+                    </ul>
+                </div>
+            `
+        },
+        'matetsi': {
+            title: 'Matetsi Safari Area',
+            content: `
+                <div class="area-info-content">
+                    <h3>Matetsi Safari Area</h3>
+                    <p><strong>Size:</strong> 3,000 km² across 7 concessions</p>
+                    <p><strong>Location:</strong> Between Zambezi River (north) and Hwange National Park (south)</p>
+                    <p><strong>Access:</strong> 40km from Victoria Falls</p>
+                    
+                    <h4>Conservation & Wildlife</h4>
+                    <ul>
+                        <li><strong>Famous for:</strong> Large population of sable antelopes</li>
+                        <li><strong>Big Game:</strong> Elephant, buffalo, lion, leopard, wild dog</li>
+                        <li><strong>Habitat:</strong> Mopane forests, grasslands, riverine areas</li>
+                        <li><strong>Private Concessions:</strong> Exclusive safari experiences</li>
+                        <li><strong>Activities:</strong> Game drives, walking safaris, river activities</li>
+                    </ul>
+                    
+                    <h4>Key Areas</h4>
+                    <ul>
+                        <li><strong>Matetsi Units 1-7:</strong> Individual hunting/safari concessions</li>
+                        <li><strong>Matetsi Victoria Falls:</strong> Luxury eco-lodge on Zambezi</li>
+                        <li><strong>Private Game Reserve:</strong> 136,000-acre unfenced wilderness</li>
+                        <li><strong>KAZA Region:</strong> Part of world's largest transfrontier conservation area</li>
+                        <li><strong>Community Benefits:</strong> Employment and conservation partnerships</li>
+                    </ul>
+                </div>
+            `
+        },
+        'panda masuie': {
+            title: 'Panda Masuie Forest Reserve',
+            content: `
+                <div class="area-info-content">
+                    <h3>Panda Masuie Forest Reserve</h3>
+                    <p><strong>Size:</strong> 85,000 acres (355 km²)</p>
+                    <p><strong>Status:</strong> State Forest designated 1961, managed by Forestry Commission</p>
+                    <p><strong>Location:</strong> Western Zimbabwe, between Zambezi and Kazuma Pan National Parks</p>
+                    
+                    <h4>IFAW Elephant Project</h4>
+                    <ul>
+                        <li><strong>Partnership:</strong> IFAW & Wild is Life-ZEN since 2016</li>
+                        <li><strong>Mission:</strong> Elephant rescue, rehabilitation & release</li>
+                        <li><strong>Success:</strong> Rescued elephants integrating with wild herds</li>
+                        <li><strong>Anti-Poaching:</strong> Trained rangers with SMART technology</li>
+                        <li><strong>Community Support:</strong> Livestock health programs for Masuwe community</li>
+                    </ul>
+                    
+                    <h4>Wildlife & Conservation</h4>
+                    <ul>
+                        <li><strong>KAZA Region:</strong> Key protected area in transfrontier network</li>
+                        <li><strong>Large Mammals:</strong> Wild elephant herds, buffalo, lion prides</li>
+                        <li><strong>Predators:</strong> Leopard, caracal, brown hyena, wild dogs</li>
+                        <li><strong>Small Mammals:</strong> Bat-eared foxes and other rare species</li>
+                        <li><strong>Conservation Status:</strong> Many species listed on IUCN Red List</li>
+                    </ul>
+                </div>
+            `
+        },
+        'fuller': {
+            title: 'Fuller Forestry Area',
+            content: `
+                <div class="area-info-content">
+                    <h3>Fuller Forestry Area</h3>
+                    <p><strong>Location:</strong> Northwestern Zimbabwe, bordering Kazuma Pan National Park</p>
+                    <p><strong>Status:</strong> Forestry land adjacent to conservation areas</p>
+                    <p><strong>Connection:</strong> Borders Woodlands community estate and conservation areas</p>
+                    
+                    <h4>Conservation Context</h4>
+                    <ul>
+                        <li><strong>Ecosystem Role:</strong> Forms part of larger conservation landscape</li>
+                        <li><strong>Habitat:</strong> Mixed forest and grassland areas</li>
+                        <li><strong>Wildlife Corridor:</strong> Provides connectivity between protected areas</li>
+                        <li><strong>Management:</strong> Forestry Commission of Zimbabwe</li>
+                        <li><strong>Proximity:</strong> Near Victoria Falls tourism area</li>
+                    </ul>
+                    
+                    <h4>Regional Importance</h4>
+                    <ul>
+                        <li><strong>Buffer Zone:</strong> Protects core conservation areas</li>
+                        <li><strong>Community Interface:</strong> Links conservation with local communities</li>
+                        <li><strong>KAZA Network:</strong> Part of transfrontier conservation planning</li>
+                        <li><strong>Forest Resources:</strong> Important for ecosystem services</li>
+                        <li><strong>Tourism Potential:</strong> Close to major attractions</li>
+                    </ul>
+                </div>
+            `
+        }
+    };
+
+    // Create information panel
+    function createInfoPanel(map) {
+        const infoPanel = L.control({ position: 'bottomleft' });
+        
+        infoPanel.onAdd = function(map) {
+            const div = L.DomUtil.create('div', 'info-panel');
+            div.innerHTML = `
+                <div id="info-panel-content" style="
+                    width: 350px;
+                    max-height: 400px;
+                    background: rgba(255, 255, 255, 0.95);
+                    padding: 15px;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                    font-size: 13px;
+                    line-height: 1.4;
+                    overflow-y: auto;
+                    display: none;
+                ">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <h3 style="margin: 0; color: #333; font-size: 16px;">Area Information</h3>
+                        <button onclick="closeInfoPanel()" style="
+                            background: #666;
+                            color: white;
+                            border: none;
+                            border-radius: 50%;
+                            width: 24px;
+                            height: 24px;
+                            cursor: pointer;
+                            font-size: 14px;
+                            line-height: 1;
+                        ">&times;</button>
+                    </div>
+                    <div id="info-content"></div>
+                </div>
+            `;
+            
+            return div;
+        };
+        
+        infoPanel.addTo(map);
+    }
+
+    // Function to show area information
+    function showAreaInfo(areaKey) {
+        const info = areaInfo[areaKey];
+        if (!info) return;
+        
+        const panel = document.getElementById('info-panel-content');
+        const content = document.getElementById('info-content');
+        
+        if (panel && content) {
+            content.innerHTML = info.content;
+            panel.style.display = 'block';
+        }
+    }
+
+    // Function to close info panel
+    function closeInfoPanel() {
+        const panel = document.getElementById('info-panel-content');
+        if (panel) {
+            panel.style.display = 'none';
+        }
+    }
+
+    // Make functions globally available
+    window.showAreaInfo = showAreaInfo;
+    window.closeInfoPanel = closeInfoPanel;
 
     // Initialize the map when document is ready
     document.addEventListener('DOMContentLoaded', function() {
@@ -583,6 +802,7 @@
         .then(() => {
             debug("All layers loaded successfully");
             createLegend(window.map);
+            createInfoPanel(window.map); // Add the information panel
             
             // Set up layer control with overlays
             L.control.layers(baseLayers, overlayLayers, {
@@ -673,7 +893,7 @@
                             dashArray: '',
                             fillOpacity: 0.6
                         },
-                        onEachFeature: onEachLandUseFeature  // Use the same labeling function as land use
+                        onEachFeature: onEachLandUseFeature  // Use the enhanced labeling function with info panel
                     }).addTo(map);
                     
                     // Add to overlay control
@@ -1174,7 +1394,7 @@
         };
     }
 
-    // Specific function for land use features to ensure proper labeling
+    // Specific function for land use features to ensure proper labeling and info panel
     function onEachLandUseFeature(feature, layer) {
         if (feature.properties) {
             const designation = findDesignationProperty(feature.properties);
@@ -1183,6 +1403,38 @@
                         feature.properties.TITLE || '';
 
             let popupContent = '<div class="popup-content">';
+
+            // Check if this feature has area info available
+            let areaKey = null;
+            const nameCheck = name.toLowerCase();
+            
+            if (nameCheck.includes('hwange')) {
+                areaKey = 'hwange';
+            } else if (nameCheck.includes('matetsi')) {
+                areaKey = 'matetsi';
+            } else if (nameCheck.includes('panda') && nameCheck.includes('masuie')) {
+                areaKey = 'panda masuie';
+            } else if (nameCheck.includes('fuller')) {
+                areaKey = 'fuller';
+            }
+            
+            // Add "More Info" button if area info is available
+            if (areaKey) {
+                popupContent += `
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <button onclick="showAreaInfo('${areaKey}')" style="
+                            background: #2c5530;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            font-weight: bold;
+                        ">📖 View Detailed Information</button>
+                    </div>
+                `;
+            }
 
             if (designation) {
                 const displayDesignation = designation === 'Unknown' ? 'Resettlement Area' : designation;
@@ -1495,10 +1747,44 @@
         });
     }
 
-    // General feature interaction function
+    // General feature interaction function with info panel support
     function onEachFeature(feature, layer) {
         if (feature.properties) {
             let popupContent = '<div class="popup-content">';
+            
+            // Check if this feature has area info available
+            let areaKey = null;
+            const name = (feature.properties.name || feature.properties.Name || 
+                         feature.properties.NAME || '').toLowerCase();
+            
+            if (name.includes('hwange')) {
+                areaKey = 'hwange';
+            } else if (name.includes('matetsi')) {
+                areaKey = 'matetsi';
+            } else if (name.includes('panda') && name.includes('masuie')) {
+                areaKey = 'panda masuie';
+            } else if (name.includes('fuller')) {
+                areaKey = 'fuller';
+            }
+            
+            // Add "More Info" button if area info is available
+            if (areaKey) {
+                popupContent += `
+                    <div style="text-align: center; margin-bottom: 10px;">
+                        <button onclick="showAreaInfo('${areaKey}')" style="
+                            background: #2c5530;
+                            color: white;
+                            border: none;
+                            padding: 8px 16px;
+                            border-radius: 4px;
+                            cursor: pointer;
+                            font-size: 12px;
+                            font-weight: bold;
+                        ">📖 View Detailed Information</button>
+                    </div>
+                `;
+            }
+            
             for (const prop in feature.properties) {
                 const value = feature.properties[prop];
                 if (value !== null && value !== undefined && value !== '') {

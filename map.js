@@ -206,6 +206,117 @@ function loadLandUseLayer(map) {
                 }).addTo(map);
 
                 // Add to overlay control
+                overlayLayers["Land Use"] = allLayers.landUse;
+
+                // Fit the map to the bounds of the GeoJSON layer
+                map.fitBounds(allLayers.landUse.getBounds());
+
+                resolve();
+            })
+            .catch(error => {
+                console.error("Error loading land use data:", error);
+                reject(error);
+            });
+    });
+}
+
+// Function to load the Community CA layer
+function loadCommunityCALayer(map) {
+    return new Promise((resolve, reject) => {
+        fetch('data/communityCA.geojson')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                debug("Community CA data loaded successfully");
+
+                // Add GeoJSON to map with styling and interactivity
+                allLayers.communityCA = L.geoJSON(data, {
+                    style: {
+                        fillColor: '#D2B48C', // Light brown as requested
+                        weight: 1,
+                        opacity: 1,
+                        color: '#666',
+                        dashArray: '',
+                        fillOpacity: 0.6
+                    },
+                    onEachFeature: onEachLandUseFeature   // Use the same labeling function as land use
+                }).addTo(map);
+
+                // Add to overlay control
+                overlayLayers["Community Conservation Areas"] = allLayers.communityCA;
+
+                resolve();
+            })
+            .catch(error => {
+                console.error("Error loading Community CA data:", error);
+                // Don't reject, just resolve with a warning to allow other layers to load
+                resolve();
+            });
+    });
+}
+
+// Function to load the Matetsi Units layer (UPDATED FOR LINESTRING WITH LABELING)
+function loadMatetsiUnitsLayer(map) {
+    return new Promise((resolve, reject) => {
+        fetch('data/matetsiunits.geojson') // Updated filename
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                debug("Matetsi Units data loaded successfully");
+
+                // Add GeoJSON to map with styling for linestrings
+                allLayers.matetsiUnits = L.geoJSON(data, {
+                    style: {
+                        color: '#FF8C00', // Dark orange color for linestrings
+                        weight: 3, // Thicker line for visibility
+                        opacity: 0.8
+                    },
+                    onEachFeature: function(feature, layer) {
+                        // Only add popup, no mouseover effects
+                        if (feature.properties) {
+                            let popupContent = '<div class="popup-content">';
+
+                            for (const prop in feature.properties) {
+                                const value = feature.properties[prop];
+                                if (value !== null && value !== undefined && value !== '') {
+                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+                                }
+                            }
+
+                            popupContent += '</div>';
+                            layer.bindPopup(popupContent);
+
+                            // Add label if name exists
+                            let name = feature.properties.name || feature.properties.Name ||
+                                        feature.properties.NAME || feature.properties.site_name ||
+                                        feature.properties.project_name || '';
+
+                            if (name) {
+                                layer.bindTooltip(name, {
+                                    permanent: false,
+                                    direction: 'top',
+                                    offset: [0, -10],
+                                    className: 'place-label'
+                                });
+                            }
+                        }
+
+                        layer.on({
+                            click: zoomToFeature
+                        });
+                    }
+                });
+
+                // Add to overlay control
                 overlayLayers["Project Sites"] = allLayers.projectSites;
 
                 resolve();
@@ -992,97 +1103,7 @@ function createLegend(map) {
     };
 
     legend.addTo(map);
-}
-                overlayLayers["Land Use"] = allLayers.landUse;
-
-                // Fit the map to the bounds of the GeoJSON layer
-                map.fitBounds(allLayers.landUse.getBounds());
-
-                resolve();
-            })
-            .catch(error => {
-                console.error("Error loading land use data:", error);
-                reject(error);
-            });
-    });
-}
-
-// Function to load the Community CA layer
-function loadCommunityCALayer(map) {
-    return new Promise((resolve, reject) => {
-        fetch('data/communityCA.geojson')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                debug("Community CA data loaded successfully");
-
-                // Add GeoJSON to map with styling and interactivity
-                allLayers.communityCA = L.geoJSON(data, {
-                    style: {
-                        fillColor: '#D2B48C', // Light brown as requested
-                        weight: 1,
-                        opacity: 1,
-                        color: '#666',
-                        dashArray: '',
-                        fillOpacity: 0.6
-                    },
-                    onEachFeature: onEachLandUseFeature   // Use the same labeling function as land use
-                }).addTo(map);
-
-                // Add to overlay control
-                overlayLayers["Community Conservation Areas"] = allLayers.communityCA;
-
-                resolve();
-            })
-            .catch(error => {
-                console.error("Error loading Community CA data:", error);
-                // Don't reject, just resolve with a warning to allow other layers to load
-                resolve();
-            });
-    });
-}
-
-// Function to load the Matetsi Units layer (UPDATED FOR LINESTRING WITH LABELING)
-function loadMatetsiUnitsLayer(map) {
-    return new Promise((resolve, reject) => {
-        fetch('data/matetsiunits.geojson') // Updated filename
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then(data => {
-                debug("Matetsi Units data loaded successfully");
-
-                // Add GeoJSON to map with styling for linestrings
-                allLayers.matetsiUnits = L.geoJSON(data, {
-                    style: {
-                        color: '#FF8C00', // Dark orange color for linestrings
-                        weight: 3, // Thicker line for visibility
-                        opacity: 0.8
-                    },
-                    onEachFeature: function(feature, layer) {
-                        // Only add popup, no mouseover effects
-                        if (feature.properties) {
-                            let popupContent = '<div class="popup-content">';
-
-                            for (const prop in feature.properties) {
-                                const value = feature.properties[prop];
-                                if (value !== null && value !== undefined && value !== '') {
-                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
-                                    popupContent += `<strong>${prop}:</strong> ${value}<br>`;
-                                }
-                            }
-
-                            popupContent += '</div>';
-                            layer.bindPopup(popupContent);
-
-                            // ADD LABELING FOR MATETSI UNITS
+} ADD LABELING FOR MATETSI UNITS
                             let name = feature.properties.name || feature.properties.Name ||
                                         feature.properties.NAME || feature.properties.unit_name ||
                                         feature.properties.UNIT_NAME || feature.properties.Unit ||
@@ -1573,25 +1594,4 @@ function loadProjectSitesLayer(map) {
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
 
-                            // Add label if name exists
-                            let name = feature.properties.name || feature.properties.Name ||
-                                        feature.properties.NAME || feature.properties.site_name ||
-                                        feature.properties.project_name || '';
-
-                            if (name) {
-                                layer.bindTooltip(name, {
-                                    permanent: false,
-                                    direction: 'top',
-                                    offset: [0, -10],
-                                    className: 'place-label'
-                                });
-                            }
-                        }
-
-                        layer.on({
-                            click: zoomToFeature
-                        });
-                    }
-                });
-
-                // Add to overlay control
+                            //

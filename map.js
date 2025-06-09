@@ -62,13 +62,13 @@ document.addEventListener('DOMContentLoaded', function() {
             text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
             pointer-events: none !important;
         }
-        .chiefs-label {
+        .chief-label {
             background: none !important;
             border: none !important;
             box-shadow: none !important;
-            font-size: 11px !important;
+            font-size: 12px !important;
             font-weight: bold !important;
-            color: #8B4513 !important;
+            color: #8B0000 !important;
             text-shadow: 2px 2px 3px white, -2px -2px 3px white, 2px -2px 3px white, -2px 2px 3px white !important;
             pointer-events: none !important;
         }
@@ -125,26 +125,30 @@ function initializeMap() {
         "Carto Light": cartoLight
     };
 
-    // Load all GeoJSON layers - UPDATED WITH NEW FILES
+    // Load all GeoJSON layers - UPDATED WITH NEW LAYERS (IFAW tracks load last to appear on top)
     debug("Loading GeoJSON layers...");
     Promise.all([
         loadLandUseLayer(window.map),
         loadCommunityCALayer(window.map),
         loadMatetsiUnitsLayer(window.map),
         loadIntersectedLayer(window.map),
-        loadLandscapeBoundaryLayer(window.map), // Updated file
+        loadLandscapeBoundaryLayer(window.map), // Updated with red color and 3px thickness
         loadDistrictBoundariesLayer(window.map),
         loadRiversLayer(window.map),
         loadRoadsLayer(window.map),
         loadPlacesLayer(window.map),
+        // Existing layers
         loadWaterSourcesLayer(window.map),
         loadProjectSitesLayer(window.map),
         loadBufferWardsLayer(window.map),
-        loadElephantMovementLayer(window.map),
-        // NEW LAYERS ADDED
-        loadChiefsLayer(window.map),
-        loadIfawElephantMovementLayer(window.map)
+        loadElephantMovementLayer(window.map), // Regular elephant movement loads first
+        // NEW LAYERS
+        loadChiefsLayer(window.map), // Chiefs with 20km buffer circles
     ])
+    .then(() => {
+        // Load IFAW elephant tracks AFTER all other layers to ensure it appears on top
+        return loadIFAWElephantTracksLayer(window.map);
+    })
     .then(() => {
         debug("All layers loaded successfully");
         createLegend(window.map);
@@ -375,7 +379,7 @@ function loadIntersectedLayer(map) {
     });
 }
 
-// Function to load the Landscape Boundary layer - UPDATED WITH NEW FILE AND STYLING
+// Function to load the Landscape Boundary layer - UPDATED WITH RED COLOR AND 3PX THICKNESS
 function loadLandscapeBoundaryLayer(map) {
     return new Promise((resolve, reject) => {
         fetch('data/Landscape_boundary.geojson') // Updated filename
@@ -392,7 +396,7 @@ function loadLandscapeBoundaryLayer(map) {
                 allLayers.landscapeBoundary = L.geoJSON(data, {
                     style: {
                         color: '#FF0000', // Red color as requested
-                        weight: 4, // 4px thickness as requested
+                        weight: 3, // 3px thickness as requested
                         opacity: 1,
                         fillOpacity: 0
                     },
@@ -980,7 +984,7 @@ function loadElephantMovementLayer(map) {
     });
 }
 
-// NEW: Function to load the Chiefs layer
+// NEW FUNCTION: Load Chiefs layer with 20km buffer circles
 function loadChiefsLayer(map) {
     return new Promise((resolve, reject) => {
         fetch('data/chiefs.geojson')
@@ -993,15 +997,37 @@ function loadChiefsLayer(map) {
             .then(data => {
                 debug("Chiefs data loaded successfully");
 
-                // Add GeoJSON to map with styling
-                allLayers.chiefs = L.geoJSON(data, {
-                    style: {
-                        fillColor: '#8B4513', // Brown color for chiefs areas
-                        weight: 2,
-                        opacity: 1,
-                        color: '#654321', // Darker brown border
-                        dashArray: '',
-                        fillOpacity: 0.6
+                // Create a layer group to hold both chiefs and their buffers
+                allLayers.chiefs = L.layerGroup();
+                allLayers.chiefBuffers = L.layerGroup();
+
+                // Add GeoJSON to map with point markers for chiefs
+                const chiefsLayer = L.geoJSON(data, {
+                    pointToLayer: function(feature, latlng) {
+                        // Create the chief marker
+                        const chiefMarker = L.circleMarker(latlng, {
+                            radius: 8,
+                            fillColor: "#8B0000", // Dark red for chiefs
+                            color: "#FF0000", // Red border
+                            weight: 2,
+                            opacity: 1,
+                            fillOpacity: 0.8
+                        });
+
+                        // Create 20km buffer circle with transparent red color
+                        const bufferCircle = L.circle(latlng, {
+                            radius: 20000, // 20km in meters
+                            fillColor: "#FF0000", // Red color
+                            color: "#CC0000", // Darker red border
+                            weight: 2,
+                            opacity: 0.6,
+                            fillOpacity: 0.1 // 10% transparency
+                        });
+
+                        // Add buffer to buffer layer group
+                        allLayers.chiefBuffers.addLayer(bufferCircle);
+
+                        return chiefMarker;
                     },
                     onEachFeature: function(feature, layer) {
                         if (feature.properties) {
@@ -1010,7 +1036,6 @@ function loadChiefsLayer(map) {
                             for (const prop in feature.properties) {
                                 const value = feature.properties[prop];
                                 if (value !== null && value !== undefined && value !== '') {
-                                    if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
                                     popupContent += `<strong>${prop}:</strong> ${value}<br>`;
                                 }
                             }
@@ -1021,41 +1046,15 @@ function loadChiefsLayer(map) {
                             // Add chief name as label
                             let name = feature.properties.name || feature.properties.Name ||
                                         feature.properties.NAME || feature.properties.chief_name ||
-                                        feature.properties.Chief || feature.properties.CHIEF ||
-                                        feature.properties.chiefdom || feature.properties.Chiefdom ||
-                                        feature.properties.CHIEFDOM || '';
-                            
+                                        feature.properties.Chief || feature.properties.CHIEF || '';
+
                             if (name) {
-                                // Use a timeout to ensure labels are applied after the map is fully loaded
-                                setTimeout(() => {
-                                    try {
-                                        // Get centroid for better label placement
-                                        let centroid;
-                                        if (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon") {
-                                            // For polygons, use the layer's getBounds method to find the center
-                                            const bounds = layer.getBounds();
-                                            centroid = bounds.getCenter();
-                                        } else {
-                                            // For other geometries, just use the layer's coordinates
-                                            centroid = layer.getLatLng();
-                                        }
-
-                                        // Create a marker at the centroid with the label
-                                        const labelMarker = L.marker(centroid, {
-                                            icon: L.divIcon({
-                                                html: name,
-                                                className: 'chiefs-label',
-                                                iconSize: [100, 20],
-                                                iconAnchor: [50, 10]
-                                            })
-                                        }).addTo(window.map);
-
-                                        // Store the label marker reference
-                                        layer.labelMarker = labelMarker;
-                                    } catch (e) {
-                                        console.error("Error adding chiefs label:", e);
-                                    }
-                                }, 700); // Delayed to avoid conflicts with other labels
+                                layer.bindTooltip(name, {
+                                    permanent: true,
+                                    direction: 'top',
+                                    offset: [0, -15],
+                                    className: 'chief-label'
+                                });
                             }
                         }
 
@@ -1065,8 +1064,16 @@ function loadChiefsLayer(map) {
                     }
                 });
 
+                // Add chiefs to the chiefs layer group
+                allLayers.chiefs.addLayer(chiefsLayer);
+
+                // Add both layer groups to the map
+                allLayers.chiefs.addTo(map);
+                allLayers.chiefBuffers.addTo(map);
+
                 // Add to overlay control
-                overlayLayers["Chiefs Areas"] = allLayers.chiefs;
+                overlayLayers["Chiefs"] = allLayers.chiefs;
+                overlayLayers["Chief Buffer Zones (20km)"] = allLayers.chiefBuffers;
 
                 resolve();
             })
@@ -1077,8 +1084,8 @@ function loadChiefsLayer(map) {
     });
 }
 
-// NEW: Function to load the IFAW Elephant Movement layer with purple styling
-function loadIfawElephantMovementLayer(map) {
+// NEW FUNCTION: Load IFAW Elephant Collared Tracks in purple (non-transparent, displays on top)
+function loadIFAWElephantTracksLayer(map) {
     return new Promise((resolve, reject) => {
         fetch('data/ifaw_collared_elephant_movement.geojson')
             .then(response => {
@@ -1088,25 +1095,37 @@ function loadIfawElephantMovementLayer(map) {
                 return response.json();
             })
             .then(data => {
-                debug("IFAW Elephant Movement data loaded successfully");
+                debug("IFAW Elephant Tracks data loaded successfully");
 
-                // Add GeoJSON to map with purple styling as requested
-                allLayers.ifawElephantMovement = L.geoJSON(data, {
+                // Add GeoJSON to map with purple styling (non-transparent)
+                allLayers.ifawElephantTracks = L.geoJSON(data, {
                     style: function(feature) {
-                        return {
-                            fillColor: '#800080', // Purple color as requested
+                        // Check if it's a line or point feature and style accordingly
+                        if (feature.geometry.type === 'LineString' || feature.geometry.type === 'MultiLineString') {
+                            return {
+                                color: '#800080', // Purple color for tracks
+                                weight: 4, // Slightly thicker for visibility
+                                opacity: 1 // Fully opaque
+                            };
+                        } else {
+                            // For point features, this will be handled in pointToLayer
+                            return {};
+                        }
+                    },
+                    pointToLayer: function(feature, latlng) {
+                        return L.circleMarker(latlng, {
+                            radius: 6, // Slightly larger for visibility
+                            fillColor: "#800080", // Purple color for elephant points
+                            color: "#4B0082", // Darker purple border
                             weight: 2,
                             opacity: 1,
-                            color: '#4B0082', // Darker purple border
-                            fillOpacity: 0.7
-                        };
+                            fillOpacity: 1 // Fully opaque
+                        });
                     },
                     onEachFeature: function(feature, layer) {
                         if (feature.properties) {
                             let popupContent = '<div class="popup-content">';
-                            
-                            // Add special header for IFAW data
-                            popupContent += `<strong>IFAW Collared Elephant Movement</strong><br><br>`;
+                            popupContent += '<strong>IFAW Collared Elephant Movement</strong><br>';
 
                             for (const prop in feature.properties) {
                                 const value = feature.properties[prop];
@@ -1118,6 +1137,21 @@ function loadIfawElephantMovementLayer(map) {
 
                             popupContent += '</div>';
                             layer.bindPopup(popupContent);
+
+                            // Add elephant ID or name as label if available
+                            let name = feature.properties.elephant_id || feature.properties.Elephant_ID ||
+                                        feature.properties.id || feature.properties.ID ||
+                                        feature.properties.name || feature.properties.Name ||
+                                        feature.properties.collar_id || feature.properties.Collar_ID || '';
+
+                            if (name) {
+                                layer.bindTooltip(`Elephant: ${name}`, {
+                                    permanent: false,
+                                    direction: 'top',
+                                    offset: [0, -10],
+                                    className: 'place-label'
+                                });
+                            }
                         }
 
                         layer.on({
@@ -1127,13 +1161,436 @@ function loadIfawElephantMovementLayer(map) {
                 });
 
                 // Add to overlay control
-                overlayLayers["IFAW Elephant Movement"] = allLayers.ifawElephantMovement;
+                overlayLayers["IFAW Elephant Tracks"] = allLayers.ifawElephantTracks;
 
                 resolve();
             })
             .catch(error => {
-                console.error("Error loading IFAW Elephant Movement data:", error);
+                console.error("Error loading IFAW Elephant Tracks data:", error);
                 resolve();
             });
     });
+}
+
+// Helper function to find the designation property
+function findDesignationProperty(properties) {
+    // Check for common property names that might contain designation information
+    // Listed in order of preference
+    const possibleProps = [
+        'desig', 'designation', 'type', 'class', 'landuse', 'land_use',
+        'landcover', 'land_cover', 'category', 'zone'
+    ];
+
+    for (const prop of possibleProps) {
+        if (properties[prop] !== undefined && properties[prop] !== null && properties[prop] !== '') {
+            return properties[prop];
+        }
+    }
+
+    // If we can't find a specific designation property, try to find anything with "park", "forest", etc.
+    for (const prop in properties) {
+        const value = String(properties[prop]).toLowerCase();
+        if (value.includes('park') || value.includes('forest') ||
+            value.includes('safari') || value.includes('conservation') ||
+            value.includes('reserve') || value.includes('protected')) {
+            return properties[prop];
+        }
+    }
+
+    return 'Unknown';
+}
+
+// Helper function to find the landtype property for intersected layer
+function findLandTypeProperty(properties) {
+    // Check for common property names that might contain landtype information
+    const possibleProps = [
+        'landtype', 'land_type', 'LANDTYPE', 'LAND_TYPE', 'type', 'Type', 'TYPE',
+        'class', 'Class', 'CLASS', 'category', 'Category', 'CATEGORY'
+    ];
+
+    for (const prop of possibleProps) {
+        if (properties[prop] !== undefined && properties[prop] !== null && properties[prop] !== '') {
+            return properties[prop];
+        }
+    }
+
+    return 'Unknown';
+}
+
+// Function to determine color based on the designation
+function getColor(designation) {
+    // Default color for Unknown/Resettlement Areas is brown
+    let color = '#A52A2A'; // Brown for "Resettlement Area/Unknown"
+
+    // If no designation provided, return brown (default)
+    if (!designation) return color;
+
+    // Convert designation to lowercase for case-insensitive comparison
+    const desig = String(designation).toLowerCase();
+
+    // Debug the designation
+    debug(`Checking designation: "${desig}"`);
+
+    // Assign colors based on designation types
+    if (desig.includes('national park') || desig.includes('np') || desig.includes('park')) {
+        color = '#90EE90'; // Light green for National Parks
+        debug(`  Matched as National Park: ${color}`);
+    } else if (desig.includes('forest') || desig.includes('forestry') ||
+               desig.includes('state forest') || desig.includes('reserve') ||
+               desig.includes('fr ')) {
+        color = '#006400'; // Dark green for Forest areas
+        debug(`  Matched as Forest: ${color}`);
+    } else if (desig.includes('safari') || desig.includes('game') ||
+               desig.includes('hunting') || desig.includes('sa ')) {
+        color = '#F5DEB3'; // Beige for Safari areas
+        debug(`  Matched as Safari: ${color}`);
+    } else if (desig.includes('community') || desig.includes('conservancy') ||
+               desig.includes('concession') || desig.includes('ca ') ||
+               desig.includes('ct/') || desig.includes('ct')) {
+        color = '#D2B48C'; // Tan/Brown for Community Conservation Areas
+        debug(`  Matched as Community: ${color}`);
+    } else {
+        debug(`  No match - using Resettlement Area: ${color}`);
+    }
+
+    return color;
+}
+
+// NEW: Function to determine color based on landtype for intersected layer
+function getLandTypeColor(landtype) {
+    // Default color for unknown landtype
+    let color = '#CCCCCC'; // Light gray for unknown
+
+    // If no landtype provided, return gray (default)
+    if (!landtype) return color;
+
+    // Convert landtype to lowercase for case-insensitive comparison
+    const type = String(landtype).toLowerCase();
+
+    // Debug the landtype
+    debug(`Checking landtype: "${type}"`);
+
+    // Assign colors based on landtype
+    if (type.includes('forest') || type.includes('woodland') || type.includes('tree')) {
+        color = '#006400'; // Dark green for forest land
+        debug(`  Matched as Forest Land: ${color}`);
+    } else if (type.includes('large scale') || type.includes('commercial') || 
+               type.includes('farming') || type.includes('agriculture') ||
+               type.includes('crop') || type.includes('plantation')) {
+        color = '#808080'; // Grey color for large scale commercial farming
+        debug(`  Matched as Large Scale Commercial Farming: ${color}`);
+    } else if (type.includes('communal') || type.includes('community') ||
+               type.includes('smallholder') || type.includes('subsistence')) {
+        color = '#D2B48C'; // Same color as community conservation areas
+        debug(`  Matched as Communal Land: ${color}`);
+    } else {
+        debug(`  No match - using default gray: ${color}`);
+    }
+
+    return color;
+}
+
+// Style function for Land Use GeoJSON features
+function styleLandUse(feature) {
+    // Find the designation property
+    const designation = findDesignationProperty(feature.properties);
+
+    // Get color based on designation
+    const color = getColor(designation);
+
+    return {
+        fillColor: color,
+        weight: 1,
+        opacity: 1,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    };
+}
+
+// NEW: Style function for Intersected layer features
+function styleIntersected(feature) {
+    // Find the landtype property
+    const landtype = findLandTypeProperty(feature.properties);
+
+    // Get color based on landtype
+    const color = getLandTypeColor(landtype);
+
+    return {
+        fillColor: color,
+        weight: 1,
+        opacity: 1,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.7
+    };
+}
+
+// Style function for Community CA features - specific brown color
+function styleCommunityCA(feature) {
+    return {
+        fillColor: '#8B4513', // Dark brown for Community CA
+        weight: 1,
+        opacity: 1,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.6
+    };
+}
+
+// Style function for Matetsi Units features - beige color for Safari
+function styleMatetsiUnits(feature) {
+    return {
+        fillColor: '#F5DEB3', // Beige for Safari Areas
+        weight: 1,
+        opacity: 1,
+        color: '#666',
+        dashArray: '',
+        fillOpacity: 0.6
+    };
+}
+
+// Specific function for land use features to ensure proper labeling
+function onEachLandUseFeature(feature, layer) {
+    // Create a popup with feature information
+    if (feature.properties) {
+        // Find the most likely name and designation properties
+        const designation = findDesignationProperty(feature.properties);
+        let name = feature.properties.name || feature.properties.Name ||
+                    feature.properties.NAME || feature.properties.title ||
+                    feature.properties.TITLE || '';
+
+        let popupContent = '<div class="popup-content">';
+
+        // Add designation if available
+        if (designation) {
+            // If the designation is "Unknown", display "Resettlement Area" instead
+            const displayDesignation = designation === 'Unknown' ? 'Resettlement Area' : designation;
+            popupContent += `<strong>Designation:</strong> ${displayDesignation}<br>`;
+        }
+
+        // Add name if available
+        if (name) {
+            popupContent += `<strong>Name:</strong> ${name}<br>`;
+        }
+
+        // Add all other properties that might be useful
+        for (const prop in feature.properties) {
+            // Skip properties we've already included or that are empty
+            if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+            if (prop === 'name' || prop === 'Name' || prop === 'NAME' ||
+                prop === 'desig' || prop === 'designation' || prop === 'type') continue;
+
+            const value = feature.properties[prop];
+            if (value !== null && value !== undefined && value !== '') {
+                popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+            }
+        }
+
+        // Close the popup content div
+        popupContent += '</div>';
+
+        // Bind popup to layer
+        layer.bindPopup(popupContent);
+
+        // Add label for land use - ENSURE THIS WORKS BY MAKING LABEL PERMANENT
+        if (name) {
+            // Use a timeout to ensure labels are applied after the map is fully loaded
+            setTimeout(() => {
+                try {
+                    // Get centroid for better label placement
+                    let centroid;
+                    if (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon") {
+                        // For polygons, use the layer's getBounds method to find the center
+                        const bounds = layer.getBounds();
+                        centroid = bounds.getCenter();
+                    } else {
+                        // For other geometries, just use the layer's coordinates
+                        centroid = layer.getLatLng();
+                    }
+
+                    // Create a marker at the centroid with the label
+                    const labelMarker = L.marker(centroid, {
+                        icon: L.divIcon({
+                            html: name,
+                            className: 'landuse-label',
+                            iconSize: [100, 20],
+                            iconAnchor: [50, 10]
+                        })
+                    }).addTo(window.map);
+
+                    // Store the label marker reference to allow toggling it with the layer
+                    layer.labelMarker = labelMarker;
+                } catch (e) {
+                    console.error("Error adding label:", e);
+                }
+            }, 500);
+        }
+    }
+
+    // Only add click handler for zooming, no mouseover effects
+    layer.on({
+        click: zoomToFeature
+    });
+}
+
+// NEW: Specific function for intersected features with labeling
+function onEachIntersectedFeature(feature, layer) {
+    // Create a popup with feature information
+    if (feature.properties) {
+        // Find the most likely name and landtype properties
+        const landtype = findLandTypeProperty(feature.properties);
+        let name = feature.properties.name || feature.properties.Name ||
+                    feature.properties.NAME || feature.properties.title ||
+                    feature.properties.TITLE || feature.properties.area_name ||
+                    feature.properties.AREA_NAME || '';
+
+        let popupContent = '<div class="popup-content">';
+
+        // Add landtype if available
+        if (landtype) {
+            // Clean up landtype display
+            const displayLandtype = landtype === 'Unknown' ? 'Unclassified Land' : landtype;
+            popupContent += `<strong>Land Type:</strong> ${displayLandtype}<br>`;
+        }
+
+        // Add name if available
+        if (name) {
+            popupContent += `<strong>Name:</strong> ${name}<br>`;
+        }
+
+        // Add all other properties that might be useful
+        for (const prop in feature.properties) {
+            // Skip properties we've already included or that are empty
+            if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+            if (prop === 'name' || prop === 'Name' || prop === 'NAME' ||
+                prop === 'landtype' || prop === 'land_type' || prop === 'LANDTYPE' || 
+                prop === 'LAND_TYPE' || prop === 'type' || prop === 'Type' || prop === 'TYPE') continue;
+
+            const value = feature.properties[prop];
+            if (value !== null && value !== undefined && value !== '') {
+                popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+            }
+        }
+
+        // Close the popup content div
+        popupContent += '</div>';
+
+        // Bind popup to layer
+        layer.bindPopup(popupContent);
+
+        // Add label for intersected features - ENSURE THIS WORKS BY MAKING LABEL PERMANENT
+        if (name) {
+            // Use a timeout to ensure labels are applied after the map is fully loaded
+            setTimeout(() => {
+                try {
+                    // Get centroid for better label placement
+                    let centroid;
+                    if (feature.geometry.type === "Polygon" || feature.geometry.type === "MultiPolygon") {
+                        // For polygons, use the layer's getBounds method to find the center
+                        const bounds = layer.getBounds();
+                        centroid = bounds.getCenter();
+                    } else {
+                        // For other geometries, just use the layer's coordinates
+                        centroid = layer.getLatLng();
+                    }
+
+                    // Create a marker at the centroid with the label
+                    const labelMarker = L.marker(centroid, {
+                        icon: L.divIcon({
+                            html: name,
+                            className: 'intersected-label',
+                            iconSize: [100, 20],
+                            iconAnchor: [50, 10]
+                        })
+                    }).addTo(window.map);
+
+                    // Store the label marker reference to allow toggling it with the layer
+                    layer.labelMarker = labelMarker;
+                } catch (e) {
+                    console.error("Error adding intersected label:", e);
+                }
+            }, 600); // Slightly delayed to avoid conflicts with other labels
+        }
+    }
+
+    // Only add click handler for zooming, no mouseover effects
+    layer.on({
+        click: zoomToFeature
+    });
+}
+
+// Function to add interactivity to general features (without labels)
+function onEachFeature(feature, layer) {
+    // Create a popup with feature information
+    if (feature.properties) {
+        let popupContent = '<div class="popup-content">';
+
+        // Loop through all properties and add them to the popup
+        for (const prop in feature.properties) {
+            const value = feature.properties[prop];
+            if (value !== null && value !== undefined && value !== '') {
+                // Skip some properties that aren't interesting for display
+                if (['shape_leng', 'shape_area', 'SHAPE_Leng', 'SHAPE_Area'].includes(prop)) continue;
+
+                popupContent += `<strong>${prop}:</strong> ${value}<br>`;
+            }
+        }
+
+        // Close the popup content div
+        popupContent += '</div>';
+
+        // Bind popup to layer
+        layer.bindPopup(popupContent);
+    }
+
+    // Only add click handler for zooming, no mouseover effects
+    layer.on({
+        click: zoomToFeature
+    });
+}
+
+// Zoom to feature function
+function zoomToFeature(e) {
+    window.map.fitBounds(e.target.getBounds());
+}
+
+// Create legend function - UPDATED WITH NEW LAYERS
+function createLegend(map) {
+    const legend = L.control({ position: 'bottomright' });
+
+    legend.onAdd = function (map) {
+        const div = L.DomUtil.create('div', 'info legend');
+        const designations = [
+            { name: 'National Park', color: '#90EE90' },
+            { name: 'Forest Land', color: '#006400' },
+            { name: 'Safari Area', color: '#F5DEB3' },
+            { name: 'Community Conservation Area', color: '#D2B48C' },
+            { name: 'Large Scale Commercial Farming', color: '#808080' },
+            { name: 'Communal Land', color: '#D2B48C' },
+            { name: 'Resettlement Area/Unknown', color: '#A52A2A' },
+            { name: 'Water Sources', color: '#0000FF' },
+            { name: 'Project Sites', color: '#FF6600' },
+            { name: 'Buffer Wards', color: '#FFFF99' },
+            { name: 'Matetsi Units', color: '#FF8C00' },
+            { name: 'Chiefs', color: '#8B0000' },
+            { name: 'Chief Buffer Zones (20km)', color: '#FF0000' },
+            { name: 'IFAW Elephant Tracks', color: '#800080' },
+            { name: 'Elephant Movement - Low', color: '#FFA500' },
+            { name: 'Elephant Movement - Medium', color: '#FF0000' },
+            { name: 'Elephant Movement - High', color: '#800080' },
+            { name: 'Landscape Boundary', color: '#FF0000' }
+        ];
+
+        div.innerHTML += '<h4>Legend</h4>';
+        for (let i = 0; i < designations.length; i++) {
+            div.innerHTML +=
+                '<i style="background:' + designations[i].color + '"></i> ' +
+                designations[i].name + '<br>';
+        }
+
+        return div;
+    };
+
+    legend.addTo(map);
 }

@@ -987,7 +987,7 @@ function loadElephantMovementLayer(map) {
 // NEW FUNCTION: Load Chiefs layer with 20km buffer circles
 function loadChiefsLayer(map) {
     return new Promise((resolve, reject) => {
-        fetch('data/chiefs.geojson')
+        fetch('data/chiefs1.geojson')
             .then(response => {
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);

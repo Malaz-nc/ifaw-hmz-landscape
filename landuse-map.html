@@ -870,7 +870,7 @@
     // NEW FUNCTION: Load Chiefs layer with 20km buffer circles
     function loadChiefsLayer(map) {
         return new Promise((resolve, reject) => {
-            fetch('data/chiefs.geojson')
+            fetch('data/chiefs1.geojson')
                 .then(response => {
                     if (!response.ok) {
                         throw new Error(`HTTP error! Status: ${response.status}`);
@@ -926,12 +926,20 @@
                                 popupContent += '</div>';
                                 layer.bindPopup(popupContent);
 
-                                // Add chief name as label
+                                // Add chief name as label with corrections
                                 let name = feature.properties.name || feature.properties.Name ||
                                             feature.properties.NAME || feature.properties.chief_name ||
                                             feature.properties.Chief || feature.properties.CHIEF || '';
 
                                 if (name) {
+                                    // Apply name corrections
+                                    if (name.toLowerCase().includes('siphose')) {
+                                        name = name.replace(/siphose/gi, 'Siphoso');
+                                    }
+                                    if (name.toLowerCase().includes('mvuthu')) {
+                                        name = name.replace(/mvuthu/gi, 'Mvutu');
+                                    }
+
                                     layer.bindTooltip(name, {
                                         permanent: true,
                                         direction: 'top',
